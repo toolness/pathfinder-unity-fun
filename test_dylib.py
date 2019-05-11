@@ -13,6 +13,6 @@ cdll.LoadLibrary(DLL_STR)
 
 fun = CDLL(DLL_STR)
 
-assert fun.boop(2) == 7
+assert fun.boop(2) == 642
 
 print("Hooray, it works!")
