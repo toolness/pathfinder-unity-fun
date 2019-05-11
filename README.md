@@ -3,9 +3,11 @@ This is an experiment in building a C API for the Canvas API portion of [Pathfin
 ## Quick start
 
 Right now all we have is an extremely simple dynamic library that can be
-called from other languages via FFI. It doesn't even use Pathfinder yet.
+called from other languages via FFI.
 
 ```
+git submodule init
+git submodule update
 cargo build
 cargo test
 python3 test_dylib.py

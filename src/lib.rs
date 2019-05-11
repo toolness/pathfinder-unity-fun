@@ -11,6 +11,6 @@ mod tests {
     #[test]
     fn it_works() {
         use super::boop;
-        assert_eq!(boop(2), 7);
+        assert_eq!(boop(2), 642);
     }
 }
