@@ -1,5 +1,8 @@
 This is an experiment in building a C API for the Canvas API portion of [Pathfinder][].
 
+For more details on the context behind this, see 
+[Pathfinder issue #147](https://github.com/pcwalton/pathfinder/issues/147).
+
 ## Quick start
 
 Right now all we have is an extremely simple dynamic library that can be
