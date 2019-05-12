@@ -1,6 +1,9 @@
 use pathfinder_geometry::basic::point::{Point2DI32, Point2DF32};
 use pathfinder_geometry::basic::rect::RectF32;
 use pathfinder_canvas::{CanvasRenderingContext2D, Path2D};
+use pathfinder_renderer::concurrent::rayon::RayonExecutor;
+use pathfinder_renderer::concurrent::scene_proxy::SceneProxy;
+use pathfinder_renderer::options::RenderOptions;
 
 #[no_mangle]
 pub extern fn boop(x: i32) -> i32 {
@@ -28,6 +31,13 @@ pub extern fn boop(x: i32) -> i32 {
     path.line_to(Point2DF32::new(250.0, 140.0));
     path.close_path();
     canvas.stroke_path(path);
+
+    let scene = SceneProxy::new(canvas.into_scene(), RayonExecutor);
+    let options = RenderOptions::default();
+
+    for command in scene.build_with_stream(options) {
+        println!("Command: {:?}", command);
+    }
 
     window_size.x() + x
 }
