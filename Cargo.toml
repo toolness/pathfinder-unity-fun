@@ -9,3 +9,6 @@ crate-type = ["dylib"]
 
 [dependencies.pathfinder_geometry]
 path = "pathfinder/geometry"
+
+[dependencies.pathfinder_canvas]
+path = "pathfinder/canvas"
