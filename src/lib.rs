@@ -4,6 +4,7 @@ use pathfinder_canvas::{CanvasRenderingContext2D, Path2D};
 
 #[no_mangle]
 pub extern fn boop(x: i32) -> i32 {
+    // https://github.com/pcwalton/pathfinder/blob/master/examples/canvas_minimal/src/main.rs
     let window_size = Point2DI32::new(640, 480);
     let mut canvas = CanvasRenderingContext2D::new(window_size.to_f32());
     canvas.set_line_width(10.0);
