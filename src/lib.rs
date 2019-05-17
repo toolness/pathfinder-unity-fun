@@ -1,3 +1,5 @@
+mod fake_device;
+
 use pathfinder_geometry::basic::point::{Point2DI32, Point2DF32};
 use pathfinder_geometry::basic::rect::RectF32;
 use pathfinder_canvas::{CanvasRenderingContext2D, Path2D};
@@ -5,8 +7,12 @@ use pathfinder_renderer::concurrent::rayon::RayonExecutor;
 use pathfinder_renderer::concurrent::scene_proxy::SceneProxy;
 use pathfinder_renderer::options::RenderOptions;
 
+use fake_device::FakeDevice;
+
 #[no_mangle]
 pub extern fn boop(x: i32) -> i32 {
+    let _fakedev = FakeDevice {};
+
     // https://github.com/pcwalton/pathfinder/blob/master/examples/canvas_minimal/src/main.rs
     let window_size = Point2DI32::new(640, 480);
     let mut canvas = CanvasRenderingContext2D::new(window_size.to_f32());
