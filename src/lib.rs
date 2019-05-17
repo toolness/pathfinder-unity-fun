@@ -6,12 +6,21 @@ use pathfinder_canvas::{CanvasRenderingContext2D, Path2D};
 use pathfinder_renderer::concurrent::rayon::RayonExecutor;
 use pathfinder_renderer::concurrent::scene_proxy::SceneProxy;
 use pathfinder_renderer::options::RenderOptions;
+use pathfinder_renderer::gpu::renderer::{Renderer, DestFramebuffer};
+use pathfinder_gpu::resources::FilesystemResourceLoader;
+use std::env;
 
 use fake_device::FakeDevice;
 
 #[no_mangle]
 pub extern fn boop(x: i32) -> i32 {
-    let _fakedev = FakeDevice {};
+    let fakedev = FakeDevice {};
+    let mut directory = env::current_dir().unwrap();
+    directory.push("pathfinder");
+    directory.push("resources");
+    let loader = FilesystemResourceLoader { directory };
+    let fb: DestFramebuffer<FakeDevice> = DestFramebuffer::Other(0);
+    let _renderer = Renderer::new(fakedev, &loader, fb);
 
     // https://github.com/pcwalton/pathfinder/blob/master/examples/canvas_minimal/src/main.rs
     let window_size = Point2DI32::new(640, 480);

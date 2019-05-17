@@ -16,6 +16,12 @@ use pathfinder_gpu::{
     RenderState,
 };
 
+static mut framebuffer_texture: Option<FakeTexture> = None;
+
+pub struct FakeTexture {
+    pub size: Point2DI32,
+}
+
 pub struct FakeDevice {
 }
 
@@ -24,46 +30,51 @@ impl Device for FakeDevice {
     type Framebuffer = i64;
     type Program = i64;
     type Shader = i64;
-    type Texture = i64;
+    type Texture = FakeTexture;
     type TimerQuery = i64;
     type Uniform = i64;
     type VertexArray = i64;
     type VertexAttr = i64;
 
-    fn create_texture(&self, _format: TextureFormat, _size: Point2DI32) -> Self::Texture {
-        unimplemented!();
+    fn create_texture(&self, _format: TextureFormat, size: Point2DI32) -> Self::Texture {
+        FakeTexture { size }
     }
-    fn create_texture_from_data(&self, _size: Point2DI32, _data: &[u8]) -> Self::Texture {
-        unimplemented!();
+    fn create_texture_from_data(&self, size: Point2DI32, _data: &[u8]) -> Self::Texture {
+        println!("create_texture_from_data({}x{})", size.x(), size.y());
+        FakeTexture { size }
     }
     fn create_shader_from_source(
         &self,
-        _name: &str,
+        name: &str,
         _source: &[u8],
         _kind: ShaderKind,
         _template_input: HashBuilder,
     ) -> Self::Shader {
-        unimplemented!();
+        println!("create_shader_from_source({:?})", name);
+        0
     }
     fn create_vertex_array(&self) -> Self::VertexArray {
-        unimplemented!();
+        println!("create_vertex_array()");
+        6
     }
     fn create_program_from_shaders(
         &self,
-        _name: &str,
+        name: &str,
         _vertex_shader: Self::Shader,
         _fragment_shader: Self::Shader,
     ) -> Self::Program {
-        unimplemented!();
+        println!("create_program_from_shaders({:?})", name);
+        1
     }
-    fn get_vertex_attr(&self, _program: &Self::Program, _name: &str) -> Self::VertexAttr {
-        unimplemented!();
+    fn get_vertex_attr(&self, _program: &Self::Program, name: &str) -> Self::VertexAttr {
+        println!("get_vertex_attr({:?})", name);
+        7
     }
-    fn get_uniform(&self, _program: &Self::Program, _name: &str) -> Self::Uniform {
-        unimplemented!();
+    fn get_uniform(&self, _program: &Self::Program, name: &str) -> Self::Uniform {
+        println!("get_uniform({:?})", name);
+        2
     }
     fn use_program(&self, _program: &Self::Program) {
-        unimplemented!();
     }
     fn configure_float_vertex_attr(
         &self,
@@ -75,7 +86,6 @@ impl Device for FakeDevice {
         _offset: usize,
         _divisor: u32,
     ) {
-        unimplemented!();
     }
     fn configure_int_vertex_attr(
         &self,
@@ -86,16 +96,15 @@ impl Device for FakeDevice {
         _offset: usize,
         _divisor: u32,
     ) {
-        unimplemented!();
     }
     fn set_uniform(&self, _uniform: &Self::Uniform, _data: UniformData) {
-        unimplemented!();
     }
     fn create_framebuffer(&self, _texture: Self::Texture) -> Self::Framebuffer {
-        unimplemented!();
+        10
     }
     fn create_buffer(&self) -> Self::Buffer {
-        unimplemented!();
+        println!("create_buffer()");
+        4
     }
     fn allocate_buffer<T>(
         &self,
@@ -104,28 +113,33 @@ impl Device for FakeDevice {
         _target: BufferTarget,
         _mode: BufferUploadMode,
     ) {
-        unimplemented!();
+        println!("allocate_buffer()");
     }
     fn framebuffer_texture<'f>(&self, _framebuffer: &'f Self::Framebuffer) -> &'f Self::Texture {
-        unimplemented!();
+        unsafe {
+            if framebuffer_texture.is_none() {
+                    framebuffer_texture = Some(FakeTexture {
+                        size: Point2DI32::new(640, 480)
+                    });
+            }
+        // WJAHWEOAJW{OEHGA{GEWPO JO{E$WJHGQAP{YO{JPABWRHENGOF{$@wevr)ijkhbnqte$aO{hpom'[jgvrw3 B35 
+            let fucking_thing = framebuffer_texture.unwrap();
+            &fucking_thing
+        }
     }
-    fn texture_size(&self, _texture: &Self::Texture) -> Point2DI32 {
-        unimplemented!();
+    fn texture_size(&self, texture: &Self::Texture) -> Point2DI32 {
+        texture.size
     }
     fn upload_to_texture(&self, _texture: &Self::Texture, _size: Point2DI32, _data: &[u8]) {
-        unimplemented!();
     }
     fn read_pixels_from_default_framebuffer(&self, _size: Point2DI32) -> Vec<u8> {
         unimplemented!();
     }
     fn clear(&self, _params: &ClearParams) {
-         unimplemented!();
     }
     fn draw_arrays(&self, _primitive: Primitive, _index_count: u32, _render_state: &RenderState) {
-        unimplemented!();
     }
     fn draw_elements(&self, _primitive: Primitive, _index_count: u32, _render_state: &RenderState) {
-        unimplemented!();
     }
     fn draw_arrays_instanced(
         &self,
@@ -134,38 +148,30 @@ impl Device for FakeDevice {
         _instance_count: u32,
         _render_state: &RenderState,
     ) {
-        unimplemented!();
     }
     fn create_timer_query(&self) -> Self::TimerQuery {
-        unimplemented!();
+        12
     }
     fn begin_timer_query(&self, _query: &Self::TimerQuery) {
-         unimplemented!();
     }
     fn end_timer_query(&self, _query: &Self::TimerQuery) {
-        unimplemented!();
     }
     fn timer_query_is_available(&self, _query: &Self::TimerQuery) -> bool {
-        unimplemented!();
+        true
     }
     fn get_timer_query(&self, _query: &Self::TimerQuery) -> Duration {
-        unimplemented!();
+        Duration::from_secs(0)
     }
 
     // TODO(pcwalton): Go bindless...
     fn bind_vertex_array(&self, _vertex_array: &Self::VertexArray) {
-        unimplemented!();
     }
     fn bind_buffer(&self, _buffer: &Self::Buffer, _target: BufferTarget) {
-        unimplemented!();
     }
     fn bind_default_framebuffer(&self, _viewport: RectI32) {
-        unimplemented!();
     }
     fn bind_framebuffer(&self, _framebuffer: &Self::Framebuffer) {
-        unimplemented!();
     }
     fn bind_texture(&self, _texture: &Self::Texture, _unit: u32) {
-        unimplemented!();
     }
 }
