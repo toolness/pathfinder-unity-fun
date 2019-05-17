@@ -16,7 +16,7 @@ use pathfinder_gpu::{
     RenderState,
 };
 
-static mut framebuffer_texture: Option<FakeTexture> = None;
+static mut FRAMEBUFFER_TEXTURE: Option<FakeTexture> = None;
 
 pub struct FakeTexture {
     pub size: Point2DI32,
@@ -117,14 +117,15 @@ impl Device for FakeDevice {
     }
     fn framebuffer_texture<'f>(&self, _framebuffer: &'f Self::Framebuffer) -> &'f Self::Texture {
         unsafe {
-            if framebuffer_texture.is_none() {
-                    framebuffer_texture = Some(FakeTexture {
+            if FRAMEBUFFER_TEXTURE.is_none() {
+                    FRAMEBUFFER_TEXTURE = Some(FakeTexture {
                         size: Point2DI32::new(640, 480)
                     });
             }
-        // WJAHWEOAJW{OEHGA{GEWPO JO{E$WJHGQAP{YO{JPABWRHENGOF{$@wevr)ijkhbnqte$aO{hpom'[jgvrw3 B35 
-            let fucking_thing = framebuffer_texture.unwrap();
-            &fucking_thing
+            match FRAMEBUFFER_TEXTURE {
+                Some(ref thing) => thing,
+                None => panic!()
+            }
         }
     }
     fn texture_size(&self, texture: &Self::Texture) -> Point2DI32 {
