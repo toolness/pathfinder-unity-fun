@@ -1,4 +1,4 @@
-This is an experiment in building a native Unity plugin for the Canvas API
+This is an experiment in building a [native Unity plugin][] for the Canvas API
 portion of [Pathfinder][].
 
 For more details on the context behind this, see 
@@ -27,4 +27,5 @@ Logging produced by the plugin will be available in `dist/pathfinder-plugin.log`
 
 You can press <kbd>Esc</kbd> to exit the demo.
 
+[native Unity plugin]: https://docs.unity3d.com/Manual/NativePlugins.html
 [Pathfinder]: https://github.com/pcwalton/pathfinder
