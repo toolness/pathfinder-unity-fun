@@ -23,4 +23,6 @@ do the following:
 2. Open the Visual Studio solution in `dist/VSDebugHarness`.
 3. Make sure you are targeting `x64` in Visual Studio and press F5.
 
+Logging produced by the plugin will be available in `dist/pathfinder-plugin.log`.
+
 [Pathfinder]: https://github.com/pcwalton/pathfinder
