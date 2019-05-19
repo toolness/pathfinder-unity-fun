@@ -18,12 +18,12 @@ impl PluginState {
         plugin
     }
 
-    pub fn log(&mut self, msg: &str) {
+    pub fn log<T: AsRef<str>>(&mut self, msg: T) {
         if !self.logfile.exists() {
             File::create(&self.logfile).unwrap();
         }
         let mut file = OpenOptions::new().append(true).open(&self.logfile).unwrap();
-        file.write(msg.as_bytes()).unwrap();
+        file.write(msg.as_ref().as_bytes()).unwrap();
         file.write(b"\n").unwrap();
         file.flush().unwrap();
     }
@@ -66,6 +66,7 @@ fn get_plugin_state_mut() -> &'static mut PluginState {
 
 #[no_mangle]
 pub extern "stdcall" fn boop_stdcall(x: i32) -> i32 {
-    get_plugin_state_mut();
+    let plugin = get_plugin_state_mut();
+    plugin.log(format!("boop_stdcall({}) called.", x));
     51 + x
 }

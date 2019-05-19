@@ -12,13 +12,14 @@ public class NewBehaviourScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        print("HI STARTING NOW...?");
-        print(boop_stdcall(50));
+        print("Result of pathfinder plugin FFI call is: " + boop_stdcall(50));
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        if (Input.GetKey("escape")) {
+            Application.Quit();
+        }
     }
 }

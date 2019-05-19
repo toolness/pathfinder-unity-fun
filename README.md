@@ -25,4 +25,6 @@ do the following:
 
 Logging produced by the plugin will be available in `dist/pathfinder-plugin.log`.
 
+You can press <kbd>Esc</kbd> to exit the demo.
+
 [Pathfinder]: https://github.com/pcwalton/pathfinder
