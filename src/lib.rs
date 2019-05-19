@@ -1,4 +1,39 @@
-struct PluginState;
+use std::env;
+use std::path::{PathBuf};
+use std::fs::{File, OpenOptions};
+use std::io::prelude::*;
+
+struct PluginState {
+    logfile: PathBuf
+}
+
+impl PluginState {
+    pub fn new() -> Self {
+        let mut logfile = env::current_dir().unwrap();
+        logfile.push("pathfinder-plugin.log");
+        let mut plugin = PluginState {
+            logfile,
+        };
+        plugin.log("Pathfinder plugin initialized.");
+        plugin
+    }
+
+    pub fn log(&mut self, msg: &str) {
+        if !self.logfile.exists() {
+            File::create(&self.logfile).unwrap();
+        }
+        let mut file = OpenOptions::new().append(true).open(&self.logfile).unwrap();
+        file.write(msg.as_bytes()).unwrap();
+        file.write(b"\n").unwrap();
+        file.flush().unwrap();
+    }
+}
+
+impl Drop for PluginState {
+    fn drop(&mut self) {
+        self.log("Shutting down Pathfinder plugin.");
+    }
+}
 
 static mut PLUGIN_STATE: Option<PluginState> = None;
 
@@ -7,7 +42,7 @@ static mut PLUGIN_STATE: Option<PluginState> = None;
 pub extern "stdcall" fn UnityPluginLoad(_ptr: *mut ::libc::c_void) {
     unsafe {
         assert!(PLUGIN_STATE.is_none());
-        PLUGIN_STATE = Some(PluginState {});
+        PLUGIN_STATE = Some(PluginState::new());
     }
 }
 
