@@ -16,3 +16,4 @@ unity-project/*.sln
 unity-project/Library
 unity-project/Assets/*.dll
 unity-project/Assets/*.dll.meta
+unity-project/obj
