@@ -8,3 +8,11 @@
 #/target
 #**/*.rs.bk
 Cargo.lock
+.vscode
+unity-project/Temp
+unity-project/Logs
+unity-project/*.csproj
+unity-project/*.sln
+unity-project/Library
+unity-project/Assets/*.dll
+unity-project/Assets/*.dll.meta

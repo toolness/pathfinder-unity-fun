@@ -9,6 +9,7 @@ crate-type = ["dylib"]
 
 [dependencies]
 rustache = "0.1"
+libc = "0.2"
 
 [dependencies.pathfinder_geometry]
 path = "pathfinder/geometry"
