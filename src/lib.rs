@@ -20,25 +20,17 @@ pub extern "stdcall" fn UnityPluginUnload() {
     }
 }
 
-fn get_plugin_state_mut() -> &'static mut Option<PluginState> {
+fn get_plugin_state_mut() -> &'static mut PluginState {
     unsafe {
-        return &mut PLUGIN_STATE;
+        match PLUGIN_STATE {
+            None => panic!("Expected plugin to be initialized!"),
+            Some(ref mut state) => state
+        }
     }
 }
 
 #[no_mangle]
 pub extern "stdcall" fn boop_stdcall(x: i32) -> i32 {
-    match get_plugin_state_mut() {
-        None => -1,
-        Some(_) => 50 + x
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        use super::boop_stdcall;
-        assert_eq!(boop_stdcall(2), -1);
-    }
+    get_plugin_state_mut();
+    51 + x
 }

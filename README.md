@@ -12,7 +12,6 @@ It also currently only works on Windows.
 ```
 git submodule init
 git submodule update
-cargo test
 build_plugin
 ```
 
