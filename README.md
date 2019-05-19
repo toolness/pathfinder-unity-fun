@@ -1,22 +1,27 @@
-This is an experiment in building a C API for the Canvas API portion of [Pathfinder][].
+This is an experiment in building a native Unity plugin for the Canvas API
+portion of [Pathfinder][].
 
 For more details on the context behind this, see 
 [Pathfinder issue #147](https://github.com/pcwalton/pathfinder/issues/147).
 
 ## Quick start
 
-Right now all we have is an extremely simple dynamic library that can be
-called from other languages via FFI.
+Right now all we have is an extremely simple plugin that doesn't do much.
+It also currently only works on Windows.
 
 ```
 git submodule init
 git submodule update
-cargo build
 cargo test
-python3 test_dylib.py
+build_plugin
 ```
 
-This will just build the dynamic library, call it from Python 3, and
-print a success message.
+You will need to open the Unity project in the `unity-project` folder.
+To iterate on development and get decent debugger support, you can
+do the following:
+
+1. Build the Unity project in the `dist` directory.
+2. Open the Visual Studio solution in `dist/VSDebugHarness`.
+3. Make sure you are targeting `x64` in Visual Studio and press F5.
 
 [Pathfinder]: https://github.com/pcwalton/pathfinder
