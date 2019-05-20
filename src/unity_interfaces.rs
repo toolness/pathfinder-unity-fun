@@ -37,6 +37,11 @@ impl IUnityInterfaces {
     }
 }
 
+// TODO: We really shouldn't be instantiating these enums in an unchecked way
+// when passed to us by Unity, because if the values are outside of the values
+// we expect (e.g., if Unity eventually adds a new graphics renderer), our
+// derived Debug implementation will panic.
+
 #[derive(Debug)]
 pub enum UnityGfxRenderer {
     // OpenGL            =  0, // Legacy OpenGL, removed
