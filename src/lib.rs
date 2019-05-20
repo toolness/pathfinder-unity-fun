@@ -3,6 +3,10 @@ use std::path::PathBuf;
 use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
 
+mod unity_interfaces;
+
+use unity_interfaces::IUnityInterfaces;
+
 struct PluginState {
     logfile: PathBuf
 }
@@ -39,10 +43,13 @@ static mut PLUGIN_STATE: Option<PluginState> = None;
 
 // This is called by Unity when the plugin is loaded.
 #[no_mangle]
-pub extern "stdcall" fn UnityPluginLoad(_ptr: *mut ::libc::c_void) {
+pub extern "stdcall" fn UnityPluginLoad(ptr: *mut IUnityInterfaces) {
     unsafe {
         assert!(PLUGIN_STATE.is_none());
-        PLUGIN_STATE = Some(PluginState::new());
+        let mut plugin = PluginState::new();
+        let gfx = (*ptr).get_unity_graphics();
+        plugin.log(format!("Unity graphics is {:?}.", gfx));
+        PLUGIN_STATE = Some(plugin);
     }
 }
 
