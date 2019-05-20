@@ -6,3 +6,5 @@
 
 // TODO: reference any additional headers you need in STDAFX.H
 // and not in this file
+
+// This is just a dummy source code file, I don't know of any other way to make Visual Studio launch an arbitrary executable in the debugger.
