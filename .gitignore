@@ -16,4 +16,6 @@ unity-project/*.sln
 unity-project/Library
 unity-project/Assets/*.dll
 unity-project/Assets/*.dll.meta
+unity-project/Assets/StreamingAssets
+unity-project/Assets/StreamingAssets.meta
 unity-project/obj
