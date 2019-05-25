@@ -6,6 +6,7 @@ use libc::{
     c_int,
     c_void
 };
+use num_traits::FromPrimitive;
 
 #[repr(C)]
 pub struct UnityInterfaceGUID {
@@ -55,6 +56,14 @@ pub enum UnityGfxRenderer {
     XboxOneD3D12      = 23  // MS XboxOne Direct3D 12
 }
 
+pub struct UnityGfxRendererInt(c_int);
+
+impl UnityGfxRendererInt {
+    pub fn convert(self) -> Option<UnityGfxRenderer> {
+        UnityGfxRenderer::from_i32(self.0)
+    }
+}
+
 #[derive(Debug, Primitive)]
 pub enum UnityGfxDeviceEventType
 {
@@ -64,10 +73,18 @@ pub enum UnityGfxDeviceEventType
     AfterReset     = 3,
 }
 
-type IUnityGraphicsDeviceEventCallback = extern "stdcall" fn(event_type: c_int);
+pub struct UnityGfxDeviceEventTypeInt(c_int);
+
+impl UnityGfxDeviceEventTypeInt {
+    pub fn convert(self) -> Option<UnityGfxDeviceEventType> {
+        UnityGfxDeviceEventType::from_i32(self.0)
+    }
+}
+
+type IUnityGraphicsDeviceEventCallback = extern "stdcall" fn(event_type: UnityGfxDeviceEventTypeInt);
 
 pub struct IUnityGraphics {
-    pub get_renderer: extern "stdcall" fn() -> c_int,
+    pub get_renderer: extern "stdcall" fn() -> UnityGfxRendererInt,
     pub register_device_event_callback: extern "stdcall" fn(cb: IUnityGraphicsDeviceEventCallback),
     pub unregister_device_event_callback: extern "stdcall" fn(cb: IUnityGraphicsDeviceEventCallback),
     pub reserve_event_id_range: extern "stdcall" fn(count: c_int) -> c_int

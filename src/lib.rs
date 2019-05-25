@@ -5,8 +5,6 @@ use std::env;
 use std::path::PathBuf;
 use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
-use libc::c_int;
-use num_traits::FromPrimitive;
 
 mod unity_interfaces;
 
@@ -14,7 +12,8 @@ use unity_interfaces::{
     IUnityGraphics,
     IUnityInterfaces,
     UnityGfxRenderer,
-    UnityGfxDeviceEventType
+    UnityGfxDeviceEventType,
+    UnityGfxDeviceEventTypeInt
 };
 
 struct PluginState {
@@ -64,7 +63,7 @@ impl PluginState {
     pub fn get_renderer(&self) -> Option<UnityGfxRenderer> {
         let gfx = self.get_unity_graphics();
         unsafe {
-            UnityGfxRenderer::from_i32(((*gfx).get_renderer)())
+            ((*gfx).get_renderer)().convert()
         }
     }
 
@@ -83,9 +82,9 @@ impl Drop for PluginState {
 
 static mut PLUGIN_STATE: Option<PluginState> = None;
 
-extern "stdcall" fn handle_unity_device_event(event_type_i32: c_int) {
+extern "stdcall" fn handle_unity_device_event(event_type_int: UnityGfxDeviceEventTypeInt) {
     let plugin = get_plugin_state_mut();
-    let event_type = UnityGfxDeviceEventType::from_i32(event_type_i32);
+    let event_type = event_type_int.convert();
     plugin.log(format!("Unity graphics event occurred: {:?}", event_type));
     match event_type {
         Some(UnityGfxDeviceEventType::Initialize) => {
