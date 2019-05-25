@@ -1,13 +1,19 @@
+#[macro_use]
+extern crate enum_primitive_derive;
+
 use std::env;
 use std::path::PathBuf;
 use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
+use libc::c_int;
+use num_traits::FromPrimitive;
 
 mod unity_interfaces;
 
 use unity_interfaces::{
     IUnityGraphics,
     IUnityInterfaces,
+    UnityGfxRenderer,
     UnityGfxDeviceEventType
 };
 
@@ -55,12 +61,15 @@ impl PluginState {
         file.flush().unwrap();
     }
 
-    pub fn log_renderer_info(&mut self) {
+    pub fn get_renderer(&self) -> Option<UnityGfxRenderer> {
         let gfx = self.get_unity_graphics();
         unsafe {
-            let renderer = ((*gfx).get_renderer)();
-            self.log(format!("Renderer is {:?}.", renderer));
+            UnityGfxRenderer::from_i32(((*gfx).get_renderer)())
         }
+    }
+
+    pub fn log_renderer_info(&mut self) {
+        self.log(format!("Renderer is {:?}.", self.get_renderer()));
     }
 }
 
@@ -74,11 +83,12 @@ impl Drop for PluginState {
 
 static mut PLUGIN_STATE: Option<PluginState> = None;
 
-extern "stdcall" fn handle_unity_device_event(event_type: UnityGfxDeviceEventType) {
+extern "stdcall" fn handle_unity_device_event(event_type_i32: c_int) {
     let plugin = get_plugin_state_mut();
+    let event_type = UnityGfxDeviceEventType::from_i32(event_type_i32);
     plugin.log(format!("Unity graphics event occurred: {:?}", event_type));
     match event_type {
-        UnityGfxDeviceEventType::Initialize => {
+        Some(UnityGfxDeviceEventType::Initialize) => {
             plugin.log_renderer_info();
         },
         _ => {}

@@ -1,7 +1,5 @@
-// This is essentially a Rust version of the following header files:
-//
-// https://bitbucket.org/Unity-Technologies/graphicsdemos/src/default/NativeRenderingPlugin/PluginSource/source/Unity/IUnityInterface.h
-// https://bitbucket.org/Unity-Technologies/graphicsdemos/src/default/NativeRenderingPlugin/PluginSource/source/Unity/IUnityGraphics.h
+// This is essentially a Rust version of the header files located in
+// `Unity\Editor\Data\PluginAPI` in a Unity editor distribution.
 
 use libc::{
     c_ulonglong,
@@ -37,12 +35,7 @@ impl IUnityInterfaces {
     }
 }
 
-// TODO: We really shouldn't be instantiating these enums in an unchecked way
-// when passed to us by Unity, because if the values are outside of the values
-// we expect (e.g., if Unity eventually adds a new graphics renderer), our
-// derived Debug implementation will panic.
-
-#[derive(Debug)]
+#[derive(Debug, Primitive)]
 pub enum UnityGfxRenderer {
     // OpenGL            =  0, // Legacy OpenGL, removed
     // D3D9              =  1, // Direct3D 9, removed
@@ -62,7 +55,7 @@ pub enum UnityGfxRenderer {
     XboxOneD3D12      = 23  // MS XboxOne Direct3D 12
 }
 
-#[derive(Debug)]
+#[derive(Debug, Primitive)]
 pub enum UnityGfxDeviceEventType
 {
     Initialize     = 0,
@@ -71,10 +64,10 @@ pub enum UnityGfxDeviceEventType
     AfterReset     = 3,
 }
 
-type IUnityGraphicsDeviceEventCallback = extern "stdcall" fn(event_type: UnityGfxDeviceEventType);
+type IUnityGraphicsDeviceEventCallback = extern "stdcall" fn(event_type: c_int);
 
 pub struct IUnityGraphics {
-    pub get_renderer: extern "stdcall" fn() -> UnityGfxRenderer,
+    pub get_renderer: extern "stdcall" fn() -> c_int,
     pub register_device_event_callback: extern "stdcall" fn(cb: IUnityGraphicsDeviceEventCallback),
     pub unregister_device_event_callback: extern "stdcall" fn(cb: IUnityGraphicsDeviceEventCallback),
     pub reserve_event_id_range: extern "stdcall" fn(count: c_int) -> c_int
