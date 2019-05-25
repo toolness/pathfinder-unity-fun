@@ -12,6 +12,8 @@ rustache = "0.1"
 libc = "0.2"
 enum-primitive-derive = "0.1.2"
 num-traits = "0.2.8"
+winapi = { version = "0.3", features = ["wingdi", "libloaderapi"] }
+gl = "0.12.0"
 
 [dependencies.pathfinder_geometry]
 path = "pathfinder/geometry"

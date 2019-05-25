@@ -7,6 +7,7 @@ use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
 
 mod unity_interfaces;
+mod gl_util;
 
 use unity_interfaces::{
     IUnityGraphics,
@@ -89,6 +90,12 @@ extern "stdcall" fn handle_unity_device_event(event_type_int: UnityGfxDeviceEven
     match event_type {
         Some(UnityGfxDeviceEventType::Initialize) => {
             plugin.log_renderer_info();
+            if plugin.get_renderer() == Some(UnityGfxRenderer::OpenGLCore) {
+                gl_util::init();
+                let (major, minor) = gl_util::get_version();
+                let version = gl_util::get_version_string();
+                plugin.log(format!("OpenGL version is {}.{} ({}).", major, minor, version));
+            }
         },
         _ => {}
     }

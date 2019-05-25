@@ -36,7 +36,7 @@ impl IUnityInterfaces {
     }
 }
 
-#[derive(Debug, Primitive)]
+#[derive(Debug, Primitive, PartialEq)]
 pub enum UnityGfxRenderer {
     // OpenGL            =  0, // Legacy OpenGL, removed
     // D3D9              =  1, // Direct3D 9, removed
