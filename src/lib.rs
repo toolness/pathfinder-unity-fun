@@ -6,6 +6,7 @@ use std::io::prelude::*;
 mod unity_interfaces;
 
 use unity_interfaces::{
+    IUnityGraphics,
     IUnityInterfaces,
     UnityGfxDeviceEventType
 };
@@ -30,11 +31,17 @@ impl PluginState {
     fn initialize(&mut self) {
         self.log("Pathfinder plugin initialized.");
         unsafe {
+            self.log_renderer_info();
+            let gfx = self.get_unity_graphics();
+            ((*gfx).register_device_event_callback)(handle_unity_device_event);
+        }
+    }
+
+    fn get_unity_graphics(&self) -> *const IUnityGraphics {
+        unsafe {
             let gfx = (*self.unity_interfaces).get_unity_graphics();
             assert!(!gfx.is_null());
-            let renderer = ((*gfx).get_renderer)();
-            self.log(format!("Renderer is {:?}.", renderer));
-            ((*gfx).register_device_event_callback)(handle_unity_device_event);
+            gfx
         }
     }
 
@@ -46,6 +53,14 @@ impl PluginState {
         file.write(msg.as_ref().as_bytes()).unwrap();
         file.write(b"\n").unwrap();
         file.flush().unwrap();
+    }
+
+    pub fn log_renderer_info(&mut self) {
+        let gfx = self.get_unity_graphics();
+        unsafe {
+            let renderer = ((*gfx).get_renderer)();
+            self.log(format!("Renderer is {:?}.", renderer));
+        }
     }
 }
 
@@ -60,7 +75,14 @@ impl Drop for PluginState {
 static mut PLUGIN_STATE: Option<PluginState> = None;
 
 extern "stdcall" fn handle_unity_device_event(event_type: UnityGfxDeviceEventType) {
-    get_plugin_state_mut().log(format!("Unity graphics event occurred: {:?}", event_type));
+    let plugin = get_plugin_state_mut();
+    plugin.log(format!("Unity graphics event occurred: {:?}", event_type));
+    match event_type {
+        UnityGfxDeviceEventType::Initialize => {
+            plugin.log_renderer_info();
+        },
+        _ => {}
+    }
 }
 
 // This is called by Unity when the plugin is loaded.

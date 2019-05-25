@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 public class NewBehaviourScript : MonoBehaviour
 {
-    [DllImport("pathfinder_c_api_fun")]
+    [DllImport("GfxPluginPathfinder")]
 
     private static extern int boop_stdcall(int val);
 
