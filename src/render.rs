@@ -2,9 +2,7 @@ use std::path::PathBuf;
 use pathfinder_canvas::{CanvasRenderingContext2D, Path2D};
 use pathfinder_geometry::basic::point::{Point2DF32, Point2DI32};
 use pathfinder_geometry::basic::rect::RectF32;
-use pathfinder_geometry::color::ColorF;
 use pathfinder_gpu::resources::FilesystemResourceLoader;
-use pathfinder_gpu::{ClearParams, Device};
 use pathfinder_gl::{GLDevice, GLVersion};
 use pathfinder_renderer::gpu::renderer::DestFramebuffer;
 use pathfinder_renderer::concurrent::rayon::RayonExecutor;
@@ -35,8 +33,6 @@ impl Renderer {
 
     pub fn render(&mut self) {
         let renderer = &mut self.renderer;
-
-        renderer.device.clear(&ClearParams { color: Some(ColorF::white()), ..ClearParams::default() });
 
         // Make a canvas. We're going to draw a house.
         let mut canvas = CanvasRenderingContext2D::new(self.window_size.to_f32());
