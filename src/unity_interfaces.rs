@@ -81,6 +81,8 @@ impl UnityGfxDeviceEventTypeInt {
     }
 }
 
+pub type UnityRenderingEvent = extern "stdcall" fn(event_id: c_int);
+
 type IUnityGraphicsDeviceEventCallback = extern "stdcall" fn(event_type: UnityGfxDeviceEventTypeInt);
 
 pub struct IUnityGraphics {

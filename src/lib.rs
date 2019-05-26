@@ -5,6 +5,7 @@ use std::env;
 use std::path::PathBuf;
 use std::fs::{File, OpenOptions};
 use std::io::prelude::*;
+use libc::c_int;
 
 mod unity_interfaces;
 mod gl_util;
@@ -13,6 +14,7 @@ use unity_interfaces::{
     IUnityGraphics,
     IUnityInterfaces,
     UnityGfxRenderer,
+    UnityRenderingEvent,
     UnityGfxDeviceEventType,
     UnityGfxDeviceEventTypeInt
 };
@@ -45,7 +47,7 @@ impl PluginState {
         } else {
             // TODO: Also look in the "Assets" folder, if we're being run
             // inside the Unity editor?
-            panic!("Unable to find resources dir!");
+            self.log("Unable to find resources dir!");
         }
         resources_dir
     }
@@ -152,4 +154,15 @@ pub extern "stdcall" fn boop_stdcall(x: i32) -> i32 {
     let plugin = get_plugin_state_mut();
     plugin.log(format!("boop_stdcall({}) called.", x));
     51 + x
+}
+
+extern "stdcall" fn handle_render_event(event_id: c_int) {
+    let plugin = get_plugin_state_mut();
+    plugin.log(format!("handle_render_event({}) called.", event_id));
+    plugin.log(format!("Viewport size is {:?}.", gl_util::get_viewport_size()));
+}
+
+#[no_mangle]
+pub extern "stdcall" fn get_render_event_func() -> UnityRenderingEvent {
+    handle_render_event
 }
