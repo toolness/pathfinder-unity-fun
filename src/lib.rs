@@ -19,10 +19,9 @@ use unity_interfaces::{
     UnityGfxDeviceEventTypeInt
 };
 use render::Renderer;
-use logging::Logger;
+use logging::log;
 
 struct PluginState {
-    logger: Logger,
     unity_interfaces: *const IUnityInterfaces,
     unity_renderer: Option<UnityGfxRenderer>,
     renderer: Option<Renderer>,
@@ -31,11 +30,7 @@ struct PluginState {
 
 impl PluginState {
     pub fn new(unity_interfaces: *const IUnityInterfaces) -> Self {
-        let mut logfile = env::current_dir().unwrap();
-        logfile.push("pathfinder-plugin.log");
-        let logger = Logger::new(logfile);
         let mut plugin = PluginState {
-            logger,
             unity_interfaces,
             unity_renderer: None,
             renderer: None,
@@ -50,20 +45,18 @@ impl PluginState {
         resources_dir.push("unity-project_Data");
         resources_dir.push("StreamingAssets");
         resources_dir.push("pathfinder");
-        self.log(format!("Searching for resources at {}.", resources_dir.to_string_lossy()));
+        log(format!("Searching for resources at {}.", resources_dir.to_string_lossy()));
         if resources_dir.exists() {
-            self.log("Found resources dir!");
             Some(resources_dir)
         } else {
             // TODO: Also look in the "Assets" folder, if we're being run
             // inside the Unity editor?
-            self.log("Unable to find resources dir!");
             None
         }
     }
 
     fn initialize(&mut self) {
-        self.log("Pathfinder plugin initialized.");
+        log("Pathfinder plugin initialized.");
         unsafe {
             self.log_unity_renderer_info();
             let gfx = self.get_unity_graphics();
@@ -79,10 +72,6 @@ impl PluginState {
         }
     }
 
-    pub fn log<T: AsRef<str>>(&self, msg: T) {
-        self.logger.log(msg);
-    }
-
     pub fn get_unity_renderer(&self) -> Option<UnityGfxRenderer> {
         let gfx = self.get_unity_graphics();
         unsafe {
@@ -91,11 +80,11 @@ impl PluginState {
     }
 
     pub fn log_unity_renderer_info(&mut self) {
-        self.log(format!("Unity renderer is {:?}.", self.get_unity_renderer()));
+        log(format!("Unity renderer is {:?}.", self.get_unity_renderer()));
     }
 
     pub fn handle_unity_device_event(&mut self, event_type: Option<UnityGfxDeviceEventType>) {
-        self.log(format!("Unity graphics event occurred: {:?}", event_type));
+        log(format!("Unity graphics event occurred: {:?}", event_type));
         match event_type {
             Some(UnityGfxDeviceEventType::Initialize) => {
                 self.log_unity_renderer_info();
@@ -104,7 +93,7 @@ impl PluginState {
                     gl_util::init();
                     let (major, minor) = gl_util::get_version();
                     let version = gl_util::get_version_string();
-                    self.log(format!("OpenGL version is {}.{} ({}).", major, minor, version));
+                    log(format!("OpenGL version is {}.{} ({}).", major, minor, version));
                 }
             },
             _ => {}
@@ -114,10 +103,10 @@ impl PluginState {
     fn try_to_init_renderer(&mut self) {
         match self.find_resources_dir() {
             None => {
+                log("Unable to find resources dir.");
                 self.errored = true;
             },
             Some(resources_dir) => {
-                self.log("Initializing renderer.");
                 self.renderer = Some(Renderer::new(resources_dir));
             }
         }
@@ -135,7 +124,7 @@ impl PluginState {
                 renderer.render();
             }
         } else {
-            self.log(format!(
+            log(format!(
                 "render() called, but rendering backend {:?} is unsupported.",
                 self.unity_renderer
             ));
@@ -146,7 +135,7 @@ impl PluginState {
 
 impl Drop for PluginState {
     fn drop(&mut self) {
-        self.log("Shutting down Pathfinder plugin.");
+        log("Shutting down Pathfinder plugin.");
         // TODO: We should ideally unregister our device event callback here, but
         // we never seem to actually get called, so I guess it's not that urgent...
     }
@@ -190,8 +179,7 @@ fn get_plugin_state_mut() -> &'static mut PluginState {
 // remove any C# code that calls into it.
 #[no_mangle]
 pub extern "stdcall" fn boop_stdcall(x: i32) -> i32 {
-    let plugin = get_plugin_state_mut();
-    plugin.log(format!("boop_stdcall({}) called.", x));
+    log(format!("boop_stdcall({}) called.", x));
     51 + x
 }
 
