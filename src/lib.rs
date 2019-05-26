@@ -34,8 +34,25 @@ impl PluginState {
         plugin
     }
 
+    fn find_resources_dir(&mut self) -> PathBuf {
+        let mut resources_dir = env::current_dir().unwrap();
+        resources_dir.push("unity-project_Data");
+        resources_dir.push("StreamingAssets");
+        resources_dir.push("pathfinder");
+        self.log(format!("Searching for resources at {}.", resources_dir.to_string_lossy()));
+        if resources_dir.exists() {
+            self.log("Found resources dir!");
+        } else {
+            // TODO: Also look in the "Assets" folder, if we're being run
+            // inside the Unity editor?
+            panic!("Unable to find resources dir!");
+        }
+        resources_dir
+    }
+
     fn initialize(&mut self) {
         self.log("Pathfinder plugin initialized.");
+        self.find_resources_dir();
         unsafe {
             self.log_renderer_info();
             let gfx = self.get_unity_graphics();
