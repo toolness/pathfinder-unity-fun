@@ -3,13 +3,12 @@ extern crate enum_primitive_derive;
 
 use std::env;
 use std::path::PathBuf;
-use std::fs::{File, OpenOptions};
-use std::io::prelude::*;
 use libc::c_int;
 
 mod unity_interfaces;
 mod gl_util;
 mod render;
+mod logging;
 
 use unity_interfaces::{
     IUnityGraphics,
@@ -20,9 +19,10 @@ use unity_interfaces::{
     UnityGfxDeviceEventTypeInt
 };
 use render::Renderer;
+use logging::Logger;
 
 struct PluginState {
-    logfile: PathBuf,
+    logger: Logger,
     unity_interfaces: *const IUnityInterfaces,
     unity_renderer: Option<UnityGfxRenderer>,
     renderer: Option<Renderer>,
@@ -33,8 +33,9 @@ impl PluginState {
     pub fn new(unity_interfaces: *const IUnityInterfaces) -> Self {
         let mut logfile = env::current_dir().unwrap();
         logfile.push("pathfinder-plugin.log");
+        let logger = Logger::new(logfile);
         let mut plugin = PluginState {
-            logfile,
+            logger,
             unity_interfaces,
             unity_renderer: None,
             renderer: None,
@@ -78,14 +79,8 @@ impl PluginState {
         }
     }
 
-    pub fn log<T: AsRef<str>>(&mut self, msg: T) {
-        if !self.logfile.exists() {
-            File::create(&self.logfile).unwrap();
-        }
-        let mut file = OpenOptions::new().append(true).open(&self.logfile).unwrap();
-        file.write(msg.as_ref().as_bytes()).unwrap();
-        file.write(b"\n").unwrap();
-        file.flush().unwrap();
+    pub fn log<T: AsRef<str>>(&self, msg: T) {
+        self.logger.log(msg);
     }
 
     pub fn get_unity_renderer(&self) -> Option<UnityGfxRenderer> {
