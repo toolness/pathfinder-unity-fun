@@ -8,17 +8,18 @@ use gl::types::*;
 const OPENGL32_DLL: &'static [u8] = b"opengl32.dll\0";
 
 fn get_proc_address(name: &str) -> *const c_void {
+    let mut ptr;
     let cstring = CString::new(name).unwrap();
     unsafe {
         // https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions
-        let mut ptr = wglGetProcAddress(cstring.as_ptr()) as *const _;
+        ptr = wglGetProcAddress(cstring.as_ptr()) as *mut _;
         if ptr == NULL {
             let hmodule = LoadLibraryA(OPENGL32_DLL.as_ptr() as *const i8);
             assert_ne!(hmodule, NULL as *mut _);
-            ptr = GetProcAddress(hmodule, cstring.as_ptr()) as *const _;
+            ptr = GetProcAddress(hmodule, cstring.as_ptr()) as *mut _;
         }
-        return ptr;
     }
+    return ptr;
 }
 
 pub fn init() {
@@ -51,4 +52,14 @@ pub fn get_viewport_size() -> (GLint, GLint, GLint, GLint) {
         gl::GetIntegerv(gl::VIEWPORT, ints.as_mut_ptr());
     }
     (ints[0], ints[1], ints[2], ints[3])
+}
+
+pub fn get_draw_framebuffer_binding() -> GLuint {
+    let mut fbo_id: GLint = 0;
+
+    unsafe {
+        gl::GetIntegerv(gl::DRAW_FRAMEBUFFER_BINDING, &mut fbo_id);
+    }
+
+    return fbo_id as GLuint;
 }

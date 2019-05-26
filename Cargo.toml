@@ -8,12 +8,16 @@ edition = "2018"
 crate-type = ["dylib"]
 
 [dependencies]
-rustache = "0.1"
 libc = "0.2"
 enum-primitive-derive = "0.1.2"
 num-traits = "0.2.8"
 winapi = { version = "0.3", features = ["wingdi", "libloaderapi"] }
-gl = "0.12.0"
+
+# NOTE: This *must* be the same version of gl that pathfinder_gl uses, or
+# else it will be loaded side-by-side and its state will be separate
+# from pathfinder_gl's, which will make pathfinder_gl's version panic
+# because it won't see the GL functions we've loaded in our version.
+gl = "0.6"
 
 [dependencies.pathfinder_geometry]
 path = "pathfinder/geometry"
@@ -26,3 +30,6 @@ path = "pathfinder/renderer"
 
 [dependencies.pathfinder_gpu]
 path = "pathfinder/gpu"
+
+[dependencies.pathfinder_gl]
+path = "pathfinder/gl"

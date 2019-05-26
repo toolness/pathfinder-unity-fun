@@ -107,6 +107,10 @@ impl PluginState {
                 self.errored = true;
             },
             Some(resources_dir) => {
+                log(format!(
+                    "Found resources dir at {}, initializing renderer.",
+                    resources_dir.to_string_lossy()
+                ));
                 self.renderer = Some(Renderer::new(resources_dir));
             }
         }
