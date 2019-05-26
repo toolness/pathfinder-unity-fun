@@ -112,6 +112,7 @@ extern "stdcall" fn handle_unity_device_event(event_type_int: UnityGfxDeviceEven
                 let (major, minor) = gl_util::get_version();
                 let version = gl_util::get_version_string();
                 plugin.log(format!("OpenGL version is {}.{} ({}).", major, minor, version));
+                plugin.log(format!("Viewport size is {:?}.", gl_util::get_viewport_size()));
             }
         },
         _ => {}

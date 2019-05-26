@@ -44,3 +44,11 @@ pub fn get_version_string() -> String {
         cstr.to_string_lossy().to_string()
     }
 }
+
+pub fn get_viewport_size() -> (GLint, GLint, GLint, GLint) {
+    let mut ints: [GLint; 4] = [0; 4];
+    unsafe {
+        gl::GetIntegerv(gl::VIEWPORT, ints.as_mut_ptr());
+    }
+    (ints[0], ints[1], ints[2], ints[3])
+}
