@@ -41,18 +41,17 @@ impl PluginState {
     }
 
     fn find_resources_dir(&mut self) -> Option<PathBuf> {
-        let mut resources_dir = env::current_dir().unwrap();
-        resources_dir.push("unity-project_Data");
-        resources_dir.push("StreamingAssets");
-        resources_dir.push("pathfinder");
-        log(format!("Searching for resources at {}.", resources_dir.to_string_lossy()));
-        if resources_dir.exists() {
-            Some(resources_dir)
-        } else {
-            // TODO: Also look in the "Assets" folder, if we're being run
-            // inside the Unity editor?
-            None
+        for dir_name in ["unity-project_Data", "Assets"].iter() {
+            let mut resources_dir = env::current_dir().unwrap();
+            resources_dir.push(dir_name);
+            resources_dir.push("StreamingAssets");
+            resources_dir.push("pathfinder");
+            log(format!("Searching for resources at {}.", resources_dir.to_string_lossy()));
+            if resources_dir.exists() {
+                return Some(resources_dir);
+            }
         }
+        None
     }
 
     fn initialize(&mut self) {
@@ -89,6 +88,7 @@ impl PluginState {
             Some(UnityGfxDeviceEventType::Initialize) => {
                 self.log_unity_renderer_info();
                 self.unity_renderer = self.get_unity_renderer();
+                log(format!("Unity renderer is {:?}.", self.unity_renderer));
                 if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
                     gl_util::init();
                     let (major, minor) = gl_util::get_version();
@@ -177,14 +177,6 @@ fn get_plugin_state_mut() -> &'static mut PluginState {
             Some(ref mut state) => state
         }
     }
-}
-
-// TODO: Remove this function, we don't need it. But also
-// remove any C# code that calls into it.
-#[no_mangle]
-pub extern "stdcall" fn boop_stdcall(x: i32) -> i32 {
-    log(format!("boop_stdcall({}) called.", x));
-    51 + x
 }
 
 extern "stdcall" fn handle_render_event(_event_id: c_int) {

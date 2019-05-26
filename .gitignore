@@ -19,3 +19,4 @@ unity-project/Assets/*.dll.meta
 unity-project/Assets/StreamingAssets
 unity-project/Assets/StreamingAssets.meta
 unity-project/obj
+unity-project/pathfinder-plugin.log
