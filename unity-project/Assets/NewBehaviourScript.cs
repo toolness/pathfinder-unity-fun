@@ -16,6 +16,12 @@ public class NewBehaviourScript : MonoBehaviour
     void Start()
     {
         print("Result of pathfinder plugin FFI call is: " + boop_stdcall(50));
+
+        // We don't save any player preferences, so there's not really much
+        // to lose by deleting them AFAIK, and doing this makes it easier
+        // for some changes in the Unity player settings to take effect,
+        // such as the player's window size.
+        PlayerPrefs.DeleteAll();
     }
 
     public void OnPostRender() {
