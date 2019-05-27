@@ -31,7 +31,6 @@ fn build_renderer(
 }
 
 pub struct Renderer {
-    loader: FilesystemResourceLoader,
     renderer: PathfinderRenderer<GLDevice>,
     window_size: Point2DI32
 }
@@ -42,7 +41,7 @@ impl Renderer {
         let loader = FilesystemResourceLoader { directory: resources_dir };
         let renderer = build_renderer(window_size, &loader);
 
-        Renderer { loader, renderer, window_size }
+        Renderer { renderer, window_size }
     }
 
     fn check_window_size(&mut self) {
@@ -58,10 +57,11 @@ impl Renderer {
             self.window_size = window_size;
 
             // When Unity changes its window size, it often also changes the
-            // current draw framebuffer, and since Pathfinder doesn't currently
-            // seem to support retargeting that, we need to create a whole new
-            // renderer from scratch, which is a bummer.
-            self.renderer = build_renderer(self.window_size, &self.loader);
+            // current draw framebuffer, so let's make sure that change is reflected.
+            self.renderer.device.set_default_framebuffer(get_draw_framebuffer_binding());
+
+            self.renderer.replace_dest_framebuffer(DestFramebuffer::full_window(window_size));
+            self.renderer.set_main_framebuffer_size(window_size);
         }
     }
 
