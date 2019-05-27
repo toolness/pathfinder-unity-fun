@@ -90,7 +90,7 @@ impl Renderer {
         canvas.stroke_path(path);
 
         // Render the canvas to screen.
-        let scene = SceneProxy::new(canvas.into_scene(), RayonExecutor);
+        let scene = SceneProxy::from_scene(canvas.into_scene(), RayonExecutor);
         scene.build_and_render(renderer, RenderOptions::default());
     }
 }
