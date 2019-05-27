@@ -9,7 +9,8 @@ Unity has already drawn on every frame.
 
 ## Quick start
 
-The project currently only works on Windows.
+The project currently only works on Windows, and it only supports
+Unity projects that use the OpenGL backend.
 
 ```
 git submodule init
