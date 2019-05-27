@@ -9,6 +9,7 @@ mod unity_interfaces;
 mod gl_util;
 mod render;
 mod logging;
+mod pathfinder_unity_api;
 
 use unity_interfaces::{
     IUnityGraphics,
