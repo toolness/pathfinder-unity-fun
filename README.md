@@ -18,7 +18,9 @@ git submodule update
 build_plugin
 ```
 
-You will need to open the Unity project in the `unity-project` folder.
+You will need to open the Unity project in the `unity-project` folder;
+specifically, the scene `unity-project\Assets\Scenes\SampleScene.unity`.
+
 To iterate on development and get decent debugger support, you can
 do the following:
 
