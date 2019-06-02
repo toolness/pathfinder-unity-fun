@@ -33,3 +33,6 @@ path = "pathfinder/gpu"
 
 [dependencies.pathfinder_gl]
 path = "pathfinder/gl"
+
+[dependencies.pathfinder_simd]
+path = "pathfinder/simd"

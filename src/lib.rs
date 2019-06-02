@@ -3,13 +3,17 @@ extern crate enum_primitive_derive;
 
 use std::env;
 use std::path::PathBuf;
+use std::sync::Mutex;
 use libc::c_int;
 
 mod unity_interfaces;
 mod gl_util;
 mod render;
 mod logging;
+mod pathfinder_unity_api;
 
+use pathfinder_canvas::CanvasRenderingContext2D;
+use pathfinder_unity_api::PFCanvasRef;
 use unity_interfaces::{
     IUnityGraphics,
     IUnityInterfaces,
@@ -24,6 +28,7 @@ use logging::log;
 struct PluginState {
     unity_interfaces: *const IUnityInterfaces,
     unity_renderer: Option<UnityGfxRenderer>,
+    canvas: Mutex<Option<Box<CanvasRenderingContext2D>>>,
     renderer: Option<Renderer>,
     errored: bool
 }
@@ -33,6 +38,7 @@ impl PluginState {
         let mut plugin = PluginState {
             unity_interfaces,
             unity_renderer: None,
+            canvas: Mutex::new(None),
             renderer: None,
             errored: false
         };
@@ -116,6 +122,11 @@ impl PluginState {
         }
     }
 
+    pub fn set_canvas(&mut self, canvas: Box<CanvasRenderingContext2D>) {
+        let mut locked_canvas = self.canvas.lock().unwrap();
+        *locked_canvas = Some(canvas);
+    }
+
     pub fn render(&mut self) {
         if self.errored {
             return;
@@ -125,7 +136,9 @@ impl PluginState {
                 self.try_to_init_renderer();
             }
             if let Some(renderer) = &mut self.renderer {
-                renderer.render();
+                if let Some(canvas) = self.canvas.lock().unwrap().take() {
+                    renderer.render(canvas);
+                }
             }
         } else {
             log(format!(
@@ -186,4 +199,9 @@ extern "stdcall" fn handle_render_event(_event_id: c_int) {
 #[no_mangle]
 pub extern "stdcall" fn get_render_event_func() -> UnityRenderingEvent {
     handle_render_event
+}
+
+#[no_mangle]
+pub extern "stdcall" fn queue_canvas_for_rendering(canvas: PFCanvasRef) {
+    get_plugin_state_mut().set_canvas(unsafe { Box::from_raw(canvas) });
 }
