@@ -9,6 +9,7 @@ use pathfinder_renderer::concurrent::rayon::RayonExecutor;
 use pathfinder_renderer::concurrent::scene_proxy::SceneProxy;
 use pathfinder_renderer::options::RenderOptions;
 use pathfinder_renderer::gpu::renderer::Renderer as PathfinderRenderer;
+use gl::types::GLuint;
 
 use crate::logging::log;
 use crate::gl_util::{get_viewport_size, get_draw_framebuffer_binding};
@@ -20,11 +21,11 @@ fn get_current_window_size() -> Point2DI32 {
 
 fn build_renderer(
     window_size: Point2DI32,
+    framebuffer: GLuint,
     loader: &FilesystemResourceLoader
 ) -> PathfinderRenderer<GLDevice> {
-    let fbo_id = get_draw_framebuffer_binding();
     pathfinder_renderer::gpu::renderer::Renderer::new(
-        GLDevice::new(GLVersion::GL3, fbo_id),
+        GLDevice::new(GLVersion::GL3, framebuffer),
         loader,
         DestFramebuffer::full_window(window_size)
     )
@@ -32,41 +33,43 @@ fn build_renderer(
 
 pub struct Renderer {
     renderer: PathfinderRenderer<GLDevice>,
-    window_size: Point2DI32
+    window_size: Point2DI32,
+    framebuffer: GLuint
 }
 
 impl Renderer {
     pub fn new(resources_dir: PathBuf) -> Self {
         let window_size = get_current_window_size();
+        let framebuffer = get_draw_framebuffer_binding();
         let loader = FilesystemResourceLoader { directory: resources_dir };
-        let renderer = build_renderer(window_size, &loader);
+        let renderer = build_renderer(window_size, framebuffer, &loader);
 
-        Renderer { renderer, window_size }
+        Renderer { renderer, window_size, framebuffer }
     }
 
-    fn check_window_size(&mut self) {
+    // If Unity's window size/framebuffer changes, make sure our draw
+    // calls adapt.
+    fn sync_gfx_state(&mut self) {
+        let framebuffer = get_draw_framebuffer_binding();
         let window_size = get_current_window_size();
-        if window_size != self.window_size {
-            let fb = get_draw_framebuffer_binding();
+        if window_size != self.window_size || framebuffer != self.framebuffer {
             log(format!(
-                "Window size changed from {:?} to {:?} w/ fb {}.",
+                "Window size/framebuffer changed from {:?}/{} to {:?}/{}.",
                 self.window_size,
+                self.framebuffer,
                 window_size,
-                fb
+                framebuffer
             ));
             self.window_size = window_size;
-
-            // When Unity changes its window size, it often also changes the
-            // current draw framebuffer, so let's make sure that change is reflected.
-            self.renderer.device.set_default_framebuffer(get_draw_framebuffer_binding());
-
+            self.framebuffer = framebuffer;
+            self.renderer.device.set_default_framebuffer(framebuffer);
             self.renderer.replace_dest_framebuffer(DestFramebuffer::full_window(window_size));
             self.renderer.set_main_framebuffer_size(window_size);
         }
     }
 
     pub fn render(&mut self) {
-        self.check_window_size();
+        self.sync_gfx_state();
         let renderer = &mut self.renderer;
 
         // Make a canvas. We're going to draw a house.
