@@ -170,6 +170,7 @@ public class PathfinderCameraScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // Make a canvas. We're going to draw a house.
         var canvas = new PFCanvas(new Vector2Int(300, 300));
 
         canvas.SetLineWidth(10.0f);
