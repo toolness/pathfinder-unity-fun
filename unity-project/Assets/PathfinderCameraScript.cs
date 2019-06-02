@@ -29,7 +29,13 @@ class PFPath {
     private static extern IntPtr PFPathClone(IntPtr handle);
 
     [DllImport("GfxPluginPathfinder")]
+    private static extern void PFPathClosePath(IntPtr handle);
+
+    [DllImport("GfxPluginPathfinder")]
     private static extern void PFPathMoveTo(IntPtr handle, ref PFPoint2DF to);
+
+    [DllImport("GfxPluginPathfinder")]
+    private static extern void PFPathLineTo(IntPtr handle, ref PFPoint2DF to);
 
     public PFPath(PFPath targetToClone = null) {
         if (targetToClone != null) {
@@ -44,8 +50,17 @@ class PFPath {
         PFPathMoveTo(handle, ref point);
     }
 
+    public void LineTo(Vector2 to) {
+        var point = new PFPoint2DF(to.x, to.y);
+        PFPathLineTo(handle, ref point);
+    }
+
     public PFPath Clone() {
         return new PFPath(this);
+    }
+
+    public void ClosePath() {
+        PFPathClosePath(handle);
     }
 
     ~PFPath() {
@@ -61,9 +76,14 @@ public class PathfinderCameraScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        // TODO: This is temporary code, remove it.
+        // Draw roof.
         var path = new PFPath();
-        path.MoveTo(new Vector2(5.0f, 10.0f));
+        path.MoveTo(new Vector2(50.0f, 140.0f));
+        path.LineTo(new Vector2(150.0f, 60.0f));
+        path.LineTo(new Vector2(250.0f, 140.0f));
+        path.ClosePath();
+
+        // This is temporary code just to make sure calls don't crash.
         path.Clone();
     }
 
