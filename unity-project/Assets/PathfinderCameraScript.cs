@@ -58,7 +58,7 @@ class PFCanvas {
     private IntPtr handle;
 
     [DllImport("GfxPluginPathfinder")]
-    private static extern IntPtr PFCanvasCreate(ref PFPoint2DI size);
+    private static extern IntPtr PFCanvasCreate(ref PFPoint2DF size);
 
     [DllImport("GfxPluginPathfinder")]
     private static extern void PFCanvasDestroy(IntPtr handle);
@@ -75,32 +75,52 @@ class PFCanvas {
     [DllImport("GfxPluginPathfinder")]
     private static extern void PFCanvasStrokePath(IntPtr handle, IntPtr pathHandle);
 
-    public PFCanvas(Vector2Int size) {
-        var pfSize = PFPoint2DI.FromVector(size);
+    [DllImport("GfxPluginPathfinder")]
+    private static extern void queue_canvas_for_rendering(IntPtr handle);
+
+    public PFCanvas(Vector2 size) {
+        var pfSize = PFPoint2DF.FromVector(size);
         handle = PFCanvasCreate(ref pfSize);
     }
 
+    private void EnsureHandleIsValid() {
+        if (handle == IntPtr.Zero) {
+            throw new Exception("Canvas has already been consumed!");
+        }
+    }
+
     public void SetLineWidth(float width) {
+        EnsureHandleIsValid();
         PFCanvasSetLineWidth(handle, width);
     }
 
     public void StrokeRect(Rect rect) {
+        EnsureHandleIsValid();
         var pfRect = PFRectF.FromRect(rect);
         PFCanvasStrokeRect(handle, ref pfRect);
     }
 
     public void FillRect(Rect rect) {
+        EnsureHandleIsValid();
         var pfRect = PFRectF.FromRect(rect);
         PFCanvasFillRect(handle, ref pfRect);
     }
 
     public void StrokePath(PFPath path) {
+        EnsureHandleIsValid();
         var pathHandleToConsume = path.PrepareToConsume();
         PFCanvasStrokePath(handle, pathHandleToConsume);
     }
 
+    public void QueueForRendering() {
+        queue_canvas_for_rendering(handle);
+        handle = IntPtr.Zero;
+    }
+
     ~PFCanvas() {
-        PFCanvasDestroy(handle);
+        if (handle != IntPtr.Zero) {
+            PFCanvasDestroy(handle);
+        }
     }
 }
 
@@ -170,8 +190,11 @@ public class PathfinderCameraScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+    }
+
+    public void OnPostRender() {
         // Make a canvas. We're going to draw a house.
-        var canvas = new PFCanvas(new Vector2Int(300, 300));
+        var canvas = new PFCanvas(new Vector2(Screen.width, Screen.height));
 
         canvas.SetLineWidth(10.0f);
 
@@ -189,12 +212,12 @@ public class PathfinderCameraScript : MonoBehaviour
         path.ClosePath();
         canvas.StrokePath(path);
 
+        canvas.QueueForRendering();
+
+        GL.IssuePluginEvent(get_render_event_func(), 1);
+
         // This is temporary code just to make sure calls don't crash.
         path.Clone();
-    }
-
-    public void OnPostRender() {
-        GL.IssuePluginEvent(get_render_event_func(), 1);
     }
 
     // Update is called once per frame

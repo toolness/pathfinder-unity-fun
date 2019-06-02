@@ -1,7 +1,6 @@
 use std::path::PathBuf;
-use pathfinder_canvas::{CanvasRenderingContext2D, Path2D};
-use pathfinder_geometry::basic::point::{Point2DF32, Point2DI32};
-use pathfinder_geometry::basic::rect::RectF32;
+use pathfinder_canvas::{CanvasRenderingContext2D};
+use pathfinder_geometry::basic::point::{Point2DI32};
 use pathfinder_gpu::resources::FilesystemResourceLoader;
 use pathfinder_gl::{GLDevice, GLVersion};
 use pathfinder_renderer::gpu::renderer::DestFramebuffer;
@@ -68,29 +67,9 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self) {
+    pub fn render(&mut self, canvas: Box<CanvasRenderingContext2D>) {
         self.sync_gfx_state();
         let renderer = &mut self.renderer;
-
-        // Make a canvas. We're going to draw a house.
-        let mut canvas = CanvasRenderingContext2D::new(self.window_size.to_f32());
-
-        // Set line width.
-        canvas.set_line_width(10.0);
-
-        // Draw walls.
-        canvas.stroke_rect(RectF32::new(Point2DF32::new(75.0, 140.0), Point2DF32::new(150.0, 110.0)));
-
-        // Draw door.
-        canvas.fill_rect(RectF32::new(Point2DF32::new(130.0, 190.0), Point2DF32::new(40.0, 60.0)));
-
-        // Draw roof.
-        let mut path = Path2D::new();
-        path.move_to(Point2DF32::new(50.0, 140.0));
-        path.line_to(Point2DF32::new(150.0, 60.0));
-        path.line_to(Point2DF32::new(250.0, 140.0));
-        path.close_path();
-        canvas.stroke_path(path);
 
         // Render the canvas to screen.
         let scene = SceneProxy::from_scene(canvas.into_scene(), RayonExecutor);
