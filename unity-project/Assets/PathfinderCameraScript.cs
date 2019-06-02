@@ -26,28 +26,30 @@ class PFPath {
     private static extern void PFPathDestroy(IntPtr handle);
 
     [DllImport("GfxPluginPathfinder")]
+    private static extern IntPtr PFPathClone(IntPtr handle);
+
+    [DllImport("GfxPluginPathfinder")]
     private static extern void PFPathMoveTo(IntPtr handle, ref PFPoint2DF to);
 
-    public PFPath() {
-        handle = PFPathCreate();
-    }
-
-    private void ensureNotConsumed() {
-        if (handle == IntPtr.Zero) {
-            throw new Exception("Path is already consumed!");
+    public PFPath(PFPath targetToClone = null) {
+        if (targetToClone != null) {
+            handle = PFPathClone(targetToClone.handle);
+        } else {
+            handle = PFPathCreate();
         }
     }
 
     public void MoveTo(Vector2 to) {
-        ensureNotConsumed();
         var point = new PFPoint2DF(to.x, to.y);
         PFPathMoveTo(handle, ref point);
     }
 
+    public PFPath Clone() {
+        return new PFPath(this);
+    }
+
     ~PFPath() {
-        if (handle != IntPtr.Zero) {
-            PFPathDestroy(handle);
-        }
+        PFPathDestroy(handle);
     }
 }
 
@@ -62,6 +64,7 @@ public class PathfinderCameraScript : MonoBehaviour
         // TODO: This is temporary code, remove it.
         var path = new PFPath();
         path.MoveTo(new Vector2(5.0f, 10.0f));
+        path.Clone();
     }
 
     public void OnPostRender() {
