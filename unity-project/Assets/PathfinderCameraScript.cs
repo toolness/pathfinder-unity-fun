@@ -76,6 +76,9 @@ class PFCanvas {
     private static extern void PFCanvasStrokePath(IntPtr handle, IntPtr pathHandle);
 
     [DllImport("GfxPluginPathfinder")]
+    private static extern void PFCanvasFillPath(IntPtr handle, IntPtr pathHandle);
+
+    [DllImport("GfxPluginPathfinder")]
     private static extern void queue_canvas_for_rendering(IntPtr handle);
 
     public PFCanvas(Vector2 size) {
@@ -110,6 +113,12 @@ class PFCanvas {
         EnsureHandleIsValid();
         var pathHandleToConsume = path.PrepareToConsume();
         PFCanvasStrokePath(handle, pathHandleToConsume);
+    }
+
+    public void FillPath(PFPath path) {
+        EnsureHandleIsValid();
+        var pathHandleToConsume = path.PrepareToConsume();
+        PFCanvasFillPath(handle, pathHandleToConsume);
     }
 
     public void QueueForRendering() {
