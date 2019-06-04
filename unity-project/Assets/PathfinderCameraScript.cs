@@ -154,6 +154,9 @@ class PFPath {
     [DllImport("GfxPluginPathfinder")]
     private static extern void PFPathLineTo(IntPtr handle, ref PFPoint2DF to);
 
+    [DllImport("GfxPluginPathfinder")]
+    private static extern void PFPathQuadraticCurveTo(IntPtr handle, ref PFPoint2DF ctrl, ref PFPoint2DF to);
+
     public PFPath(PFPath targetToClone = null) {
         if (targetToClone != null) {
             handle = PFPathClone(targetToClone.handle);
@@ -176,6 +179,12 @@ class PFPath {
     public void LineTo(Vector2 to) {
         var point = PFPoint2DF.FromVector(to);
         PFPathLineTo(handle, ref point);
+    }
+
+    public void QuadraticCurveTo(Vector2 ctrl, Vector2 to) {
+        var pfCtrl = PFPoint2DF.FromVector(ctrl);
+        var pfTo = PFPoint2DF.FromVector(to);
+        PFPathQuadraticCurveTo(handle, ref pfCtrl, ref pfTo);
     }
 
     public PFPath Clone() {
