@@ -157,6 +157,9 @@ class PFPath {
     [DllImport("GfxPluginPathfinder")]
     private static extern void PFPathQuadraticCurveTo(IntPtr handle, ref PFPoint2DF ctrl, ref PFPoint2DF to);
 
+    [DllImport("GfxPluginPathfinder")]
+    private static extern void PFPathBezierCurveTo(IntPtr handle, ref PFPoint2DF ctrl0, ref PFPoint2DF ctrl1, ref PFPoint2DF to);
+
     public PFPath(PFPath targetToClone = null) {
         if (targetToClone != null) {
             handle = PFPathClone(targetToClone.handle);
@@ -185,6 +188,13 @@ class PFPath {
         var pfCtrl = PFPoint2DF.FromVector(ctrl);
         var pfTo = PFPoint2DF.FromVector(to);
         PFPathQuadraticCurveTo(handle, ref pfCtrl, ref pfTo);
+    }
+
+    public void BezierCurveTo(Vector2 ctrl0, Vector2 ctrl1, Vector2 to) {
+        var pfCtrl0 = PFPoint2DF.FromVector(ctrl0);
+        var pfCtrl1 = PFPoint2DF.FromVector(ctrl1);
+        var pfTo = PFPoint2DF.FromVector(to);
+        PFPathBezierCurveTo(handle, ref pfCtrl0, ref pfCtrl1, ref pfTo);
     }
 
     public PFPath Clone() {
