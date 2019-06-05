@@ -10,7 +10,8 @@ Unity has already drawn on every frame.
 ## Quick start
 
 The project currently only works on Windows, and it only supports
-Unity projects that use the OpenGL backend.
+Unity projects that use the OpenGL backend. It has been tested
+with Unity 2019.1.
 
 ```
 git submodule init
@@ -27,8 +28,13 @@ do the following:
 1. Build the Unity project in the `dist` directory. Then exit Unity so it
    doesn't have a lock on the plugin's DLL (either that or exclude the
    plugin from running in the editor, and restart Unity).
-2. Open the Visual Studio solution in `dist/VSDebugHarness`.
-3. Make sure you are targeting `x64` in Visual Studio and press F5.
+2. Open the Visual Studio solution in `dist/VSDebugHarness`. This solution
+   doesn't have any code, it's just set up to launch the Unity project
+   and attach a debugger to it.
+3. Make sure you are targeting `x64` in Visual Studio and press <kbd>F5</kbd>.
+
+Note that pressing <kbd>F5</kbd> automatically re-runs `build_plugin`, so you
+don't need to worry about re-running it manually.
 
 Logging produced by the plugin will be available in `dist/pathfinder-plugin.log`.
 
