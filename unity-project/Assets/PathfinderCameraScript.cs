@@ -242,14 +242,16 @@ public class PathfinderCameraScript : MonoBehaviour
     [DllImport("GfxPluginPathfinder")]
     private static extern IntPtr get_render_event_func();
 
+    private PFCanvasFontContext fontContext;
+
     // Start is called before the first frame update
     void Start()
     {
+        fontContext = new PFCanvasFontContext();
     }
 
     public void OnPostRender() {
         // Make a canvas. We're going to draw a house.
-        var fontContext = new PFCanvasFontContext();
         var canvas = new PFCanvas(fontContext, new Vector2(Screen.width, Screen.height));
 
         canvas.SetLineWidth(10.0f);
