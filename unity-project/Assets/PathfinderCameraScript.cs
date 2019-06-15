@@ -63,8 +63,17 @@ class PFCanvasFontContext {
     [DllImport("GfxPluginPathfinder")]
     private static extern void PFCanvasFontContextDestroy(IntPtr handle);
 
+    [DllImport("GfxPluginPathfinder")]
+    private static extern IntPtr PFCanvasFontContextClone(IntPtr handle);
+
     public PFCanvasFontContext() {
         handle = PFCanvasFontContextCreate();
+    }
+
+    internal IntPtr PrepareToConsume() {
+        var oldHandle = handle;
+        handle = PFCanvasFontContextClone(handle);
+        return oldHandle;
     }
 
     ~PFCanvasFontContext() {
@@ -74,10 +83,6 @@ class PFCanvasFontContext {
 
 class PFCanvas {
     private IntPtr handle;
-
-    // We need to hold on to a reference to our font context to ensure
-    // it's not garbage collected.
-    private PFCanvasFontContext fontContext;
 
     [DllImport("GfxPluginPathfinder")]
     private static extern IntPtr PFCanvasCreate(IntPtr fontContextHandle, ref PFVector2F size);
@@ -105,8 +110,7 @@ class PFCanvas {
 
     public PFCanvas(PFCanvasFontContext fontContext, Vector2 size) {
         var pfSize = PFVector2F.FromVector(size);
-        this.fontContext = fontContext;
-        handle = PFCanvasCreate(fontContext.handle, ref pfSize);
+        handle = PFCanvasCreate(fontContext.PrepareToConsume(), ref pfSize);
     }
 
     private void EnsureHandleIsValid() {

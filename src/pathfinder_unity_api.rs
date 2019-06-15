@@ -136,6 +136,12 @@ pub unsafe extern "stdcall" fn PFCanvasFontContextDestroy(font_context: PFCanvas
     drop(Box::from_raw(font_context))
 }
 
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFCanvasFontContextClone(font_context: PFCanvasFontContextRef)
+                                                  -> PFCanvasFontContextRef {
+    Box::into_raw(Box::new((*font_context).clone()))
+}
+
 /// Consumes the canvas.
 #[no_mangle]
 pub unsafe extern "stdcall" fn PFCanvasCreateScene(canvas: PFCanvasRef) -> PFSceneRef {
