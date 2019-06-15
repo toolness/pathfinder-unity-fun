@@ -10,7 +10,6 @@ use pathfinder_renderer::options::RenderOptions;
 use pathfinder_renderer::gpu::renderer::Renderer as PathfinderRenderer;
 use gl::types::GLuint;
 
-use crate::logging::log;
 use crate::gl_util::{get_viewport_size, get_draw_framebuffer_binding};
 
 fn get_current_window_size() -> Vector2I {
@@ -52,13 +51,13 @@ impl Renderer {
         let framebuffer = get_draw_framebuffer_binding();
         let window_size = get_current_window_size();
         if window_size != self.window_size || framebuffer != self.framebuffer {
-            log(format!(
+            info!(
                 "Window size/framebuffer changed from {:?}/{} to {:?}/{}.",
                 self.window_size,
                 self.framebuffer,
                 window_size,
                 framebuffer
-            ));
+            );
             self.window_size = window_size;
             self.framebuffer = framebuffer;
             self.renderer.device.set_default_framebuffer(framebuffer);

@@ -8,6 +8,7 @@ edition = "2018"
 crate-type = ["dylib"]
 
 [dependencies]
+log = "0.4"
 libc = "0.2"
 enum-primitive-derive = "0.1.2"
 num-traits = "0.2.8"

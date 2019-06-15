@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate enum_primitive_derive;
 
+#[macro_use]
+extern crate log;
+
 use std::env;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -23,7 +26,6 @@ use unity_interfaces::{
     UnityGfxDeviceEventTypeInt
 };
 use render::Renderer;
-use logging::log;
 
 struct PluginState {
     unity_interfaces: *const IUnityInterfaces,
@@ -52,7 +54,7 @@ impl PluginState {
             resources_dir.push(dir_name);
             resources_dir.push("StreamingAssets");
             resources_dir.push("pathfinder");
-            log(format!("Searching for resources at {}.", resources_dir.to_string_lossy()));
+            info!("Searching for resources at {}.", resources_dir.to_string_lossy());
             if resources_dir.exists() {
                 return Some(resources_dir);
             }
@@ -61,7 +63,7 @@ impl PluginState {
     }
 
     fn initialize(&mut self) {
-        log("Pathfinder plugin initialized.");
+        info!("Pathfinder plugin initialized.");
         unsafe {
             self.log_unity_renderer_info();
             let gfx = self.get_unity_graphics();
@@ -85,21 +87,21 @@ impl PluginState {
     }
 
     pub fn log_unity_renderer_info(&mut self) {
-        log(format!("Unity renderer is {:?}.", self.get_unity_renderer()));
+        info!("Unity renderer is {:?}.", self.get_unity_renderer());
     }
 
     pub fn handle_unity_device_event(&mut self, event_type: Option<UnityGfxDeviceEventType>) {
-        log(format!("Unity graphics event occurred: {:?}", event_type));
+        info!("Unity graphics event occurred: {:?}", event_type);
         match event_type {
             Some(UnityGfxDeviceEventType::Initialize) => {
                 self.log_unity_renderer_info();
                 self.unity_renderer = self.get_unity_renderer();
-                log(format!("Unity renderer is {:?}.", self.unity_renderer));
+                info!("Unity renderer is {:?}.", self.unity_renderer);
                 if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
                     gl_util::init();
                     let (major, minor) = gl_util::get_version();
                     let version = gl_util::get_version_string();
-                    log(format!("OpenGL version is {}.{} ({}).", major, minor, version));
+                    info!("OpenGL version is {}.{} ({}).", major, minor, version);
                 }
             },
             _ => {}
@@ -109,14 +111,14 @@ impl PluginState {
     fn try_to_init_renderer(&mut self) {
         match self.find_resources_dir() {
             None => {
-                log("Unable to find resources dir.");
+                info!("Unable to find resources dir.");
                 self.errored = true;
             },
             Some(resources_dir) => {
-                log(format!(
+                info!(
                     "Found resources dir at {}, initializing renderer.",
                     resources_dir.to_string_lossy()
-                ));
+                );
                 self.renderer = Some(Renderer::new(resources_dir));
             }
         }
@@ -141,10 +143,10 @@ impl PluginState {
                 }
             }
         } else {
-            log(format!(
+            info!(
                 "render() called, but rendering backend {:?} is unsupported.",
                 self.unity_renderer
-            ));
+            );
             self.errored = true;
         }
     }
@@ -152,7 +154,7 @@ impl PluginState {
 
 impl Drop for PluginState {
     fn drop(&mut self) {
-        log("Shutting down Pathfinder plugin.");
+        info!("Shutting down Pathfinder plugin.");
         // TODO: We should ideally unregister our device event callback here, but
         // we never seem to actually get called, so I guess it's not that urgent...
     }
@@ -169,6 +171,7 @@ extern "stdcall" fn handle_unity_device_event(event_type: UnityGfxDeviceEventTyp
 pub extern "stdcall" fn UnityPluginLoad(unity_interfaces: *const IUnityInterfaces) {
     unsafe {
         assert!(PLUGIN_STATE.is_none());
+        logging::init();
         let plugin = PluginState::new(unity_interfaces);
         PLUGIN_STATE = Some(plugin);
     }
