@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use pathfinder_canvas::{CanvasRenderingContext2D};
-use pathfinder_geometry::basic::point::{Point2DI32};
+use pathfinder_geometry::basic::vector::Vector2I;
 use pathfinder_gpu::resources::FilesystemResourceLoader;
 use pathfinder_gl::{GLDevice, GLVersion};
 use pathfinder_renderer::gpu::renderer::DestFramebuffer;
@@ -13,13 +13,13 @@ use gl::types::GLuint;
 use crate::logging::log;
 use crate::gl_util::{get_viewport_size, get_draw_framebuffer_binding};
 
-fn get_current_window_size() -> Point2DI32 {
+fn get_current_window_size() -> Vector2I {
     let (_, _, width, height) = get_viewport_size();
-    Point2DI32::new(width, height)
+    Vector2I::new(width, height)
 }
 
 fn build_renderer(
-    window_size: Point2DI32,
+    window_size: Vector2I,
     framebuffer: GLuint,
     loader: &FilesystemResourceLoader
 ) -> PathfinderRenderer<GLDevice> {
@@ -32,7 +32,7 @@ fn build_renderer(
 
 pub struct Renderer {
     renderer: PathfinderRenderer<GLDevice>,
-    window_size: Point2DI32,
+    window_size: Vector2I,
     framebuffer: GLuint
 }
 
