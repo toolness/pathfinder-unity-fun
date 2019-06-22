@@ -10,6 +10,8 @@ crate-type = ["dylib"]
 [dependencies]
 log = "0.4"
 libc = "0.2"
+font-kit = "0.2"
+foreign-types = "0.3"
 enum-primitive-derive = "0.1.2"
 num-traits = "0.2.8"
 winapi = { version = "0.3", features = ["wingdi", "libloaderapi"] }
@@ -25,6 +27,9 @@ path = "pathfinder/geometry"
 
 [dependencies.pathfinder_canvas]
 path = "pathfinder/canvas"
+
+[dependencies.pathfinder_content]
+path = "pathfinder/content"
 
 [dependencies.pathfinder_renderer]
 path = "pathfinder/renderer"
