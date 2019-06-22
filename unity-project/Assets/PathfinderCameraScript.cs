@@ -58,7 +58,7 @@ class PFCanvasFontContext {
     internal IntPtr handle;
 
     [DllImport("GfxPluginPathfinder")]
-    private static extern IntPtr PFCanvasFontContextCreate();
+    private static extern IntPtr PFCanvasFontContextCreateWithSystemSource();
 
     [DllImport("GfxPluginPathfinder")]
     private static extern void PFCanvasFontContextDestroy(IntPtr handle);
@@ -67,7 +67,7 @@ class PFCanvasFontContext {
     private static extern IntPtr PFCanvasFontContextClone(IntPtr handle);
 
     public PFCanvasFontContext() {
-        handle = PFCanvasFontContextCreate();
+        handle = PFCanvasFontContextCreateWithSystemSource();
     }
 
     internal IntPtr PrepareToConsume() {
