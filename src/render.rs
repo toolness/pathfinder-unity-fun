@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 use pathfinder_canvas::{CanvasRenderingContext2D};
-use pathfinder_geometry::basic::vector::Vector2I;
+use pathfinder_geometry::vector::Vector2I;
 use pathfinder_gpu::resources::FilesystemResourceLoader;
 use pathfinder_gl::{GLDevice, GLVersion};
-use pathfinder_renderer::gpu::renderer::DestFramebuffer;
+use pathfinder_renderer::gpu::options::{DestFramebuffer, RendererOptions};
 use pathfinder_renderer::concurrent::rayon::RayonExecutor;
 use pathfinder_renderer::concurrent::scene_proxy::SceneProxy;
-use pathfinder_renderer::options::RenderOptions;
+use pathfinder_renderer::options::BuildOptions;
 use pathfinder_renderer::gpu::renderer::Renderer as PathfinderRenderer;
 use gl::types::GLuint;
 
@@ -25,7 +25,8 @@ fn build_renderer(
     pathfinder_renderer::gpu::renderer::Renderer::new(
         GLDevice::new(GLVersion::GL3, framebuffer),
         loader,
-        DestFramebuffer::full_window(window_size)
+        DestFramebuffer::full_window(window_size),
+        RendererOptions::default()
     )
 }
 
@@ -72,6 +73,6 @@ impl Renderer {
 
         // Render the canvas to screen.
         let scene = SceneProxy::from_scene(canvas.into_scene(), RayonExecutor);
-        scene.build_and_render(renderer, RenderOptions::default());
+        scene.build_and_render(renderer, BuildOptions::default());
     }
 }
