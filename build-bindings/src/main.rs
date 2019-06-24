@@ -1,11 +1,18 @@
 use std::env;
 use std::fs;
+use std::path::PathBuf;
+
+
+fn path_from_cwd(parts: &[&'static str]) -> PathBuf {
+    let mut pathbuf = env::current_dir().unwrap();
+    for part in parts.iter() {
+        pathbuf.push(part);
+    }
+    pathbuf
+}
 
 pub fn main() {
-    let mut c_api_path = env::current_dir().unwrap();
-    for part in ["..", "pathfinder", "c", "src", "lib.rs"].iter() {
-        c_api_path.push(part);
-    }
+    let c_api_path = path_from_cwd(&["..", "pathfinder", "c", "src", "lib.rs"]);
 
     if !c_api_path.exists() {
         panic!("Expected {} to exist!", c_api_path.to_string_lossy());
@@ -15,12 +22,10 @@ pub fn main() {
         .unwrap()
         .replace("extern \"C\"", "extern \"stdcall\"");
 
-    let mut plugin_api_path = env::current_dir().unwrap();
-    for part in ["..", "src", "pathfinder_unity_api.rs"].iter() {
-        plugin_api_path.push(part);
-    }
+    let plugin_parts = ["..", "src", "pathfinder_unity_api.rs"];
+    let plugin_api_path = path_from_cwd(&plugin_parts);
 
-    println!("Writing {}.", plugin_api_path.to_string_lossy());
+    println!("Writing {}.", plugin_parts.join("/"));
 
     fs::write(plugin_api_path, content).unwrap();
 }
