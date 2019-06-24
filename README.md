@@ -40,5 +40,18 @@ Logging produced by the plugin will be available in `dist/pathfinder-plugin.log`
 
 You can press <kbd>Esc</kbd> to exit the demo.
 
+## Rebuilding the plugin's ABI
+
+When Pathfinder's C API changes, we need to update the plugin's ABI to match
+it. This can be done by running:
+
+```
+cd build-bindings
+cargo run
+```
+
+This will change some files in the repository, which will need to be
+committed.
+
 [native Unity plugin]: https://docs.unity3d.com/Manual/NativePlugins.html
 [Pathfinder]: https://github.com/pcwalton/pathfinder

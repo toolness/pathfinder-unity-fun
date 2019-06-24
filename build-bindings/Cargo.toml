@@ -1,0 +1,7 @@
+[package]
+name = "build-bindings"
+version = "0.1.0"
+authors = ["Atul Varma <varmaa@gmail.com>"]
+edition = "2018"
+
+[dependencies]
