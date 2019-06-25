@@ -13,7 +13,7 @@ mod unity_interfaces;
 mod gl_util;
 mod render;
 mod logging;
-mod pathfinder_unity_api;
+pub mod pathfinder_unity_api;
 
 use pathfinder_canvas::CanvasRenderingContext2D;
 use pathfinder_unity_api::PFCanvasRef;
