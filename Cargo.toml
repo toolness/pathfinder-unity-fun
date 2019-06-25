@@ -3,6 +3,7 @@ name = "pathfinder-c-api-fun"
 version = "0.1.0"
 authors = ["Atul Varma <varmaa@gmail.com>"]
 edition = "2018"
+build = "build.rs"
 
 [lib]
 crate-type = ["dylib"]

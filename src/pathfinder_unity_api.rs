@@ -1,3 +1,5 @@
+// This file has been auto-generated, please do not edit it.
+
 // pathfinder/c/src/lib.rs
 //
 // Copyright © 2019 The Pathfinder Project Developers.
