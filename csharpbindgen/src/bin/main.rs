@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use syn::Item;
 
 fn main() {
     let mut path = env::current_dir().unwrap();
@@ -15,5 +16,19 @@ fn main() {
 
     let syntax = syn::parse_file(&code).expect("unable to parse rust source file");
 
-    println!("{:#?}", syntax);
+    // println!("{:#?}", syntax);
+
+    for item in syntax.items.iter() {
+        match item {
+            Item::Struct(item_struct) => {
+                println!("// TODO: Define struct {}", item_struct.ident.to_string());
+            },
+            Item::Fn(item_fn) => {
+                if item_fn.abi.is_some() {
+                    println!("// TODO: Define fn {}()", item_fn.ident.to_string());
+                }
+            },
+            _ => {}
+        }
+    }
 }
