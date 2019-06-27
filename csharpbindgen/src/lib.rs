@@ -38,18 +38,37 @@ impl CSStruct {
     }
 }
 
+struct CSFuncArg {
+    name: String,
+}
+
+impl CSFuncArg {
+    pub fn from_rust_arg_captured(rust_arg: &syn::ArgCaptured) -> Self {
+        CSFuncArg {
+            name: String::from("unknown") // TODO: Get actual arg name.
+        }
+    }
+}
+
 struct CSFunc {
-    name: String
+    name: String,
+    args: Vec<CSFuncArg>
 }
 
 impl CSFunc {
     pub fn from_rust_struct(rust_fn: &syn::ItemFn) -> Self {
+        let args = vec![];
+
+        // TODO: Populate args.
+
         CSFunc {
-            name: rust_fn.ident.to_string()
+            name: rust_fn.ident.to_string(),
+            args
         }
     }
 
     pub fn to_string(&self) -> String {
+        // TODO: List args.
         format!("// TODO: Define fn {}()", self.name)
     }
 }
