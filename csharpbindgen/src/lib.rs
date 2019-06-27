@@ -1,18 +1,40 @@
 use syn::Item;
 
+struct CSStructField {
+    name: String,
+}
+
+impl CSStructField {
+    pub fn from_named_rust_field(rust_field: &syn::Field) -> Self {
+        CSStructField {
+            name: rust_field.ident.as_ref().unwrap().to_string()
+        }
+    }
+}
+
 struct CSStruct {
     name: String,
+    fields: Vec<CSStructField>
 }
 
 impl CSStruct {
     pub fn from_rust_struct(rust_struct: &syn::ItemStruct) -> Self {
+        let mut fields = vec![];
+
+        if let syn::Fields::Named(rust_fields) = &rust_struct.fields {
+            for rust_field in rust_fields.named.iter() {
+                fields.push(CSStructField::from_named_rust_field(rust_field));
+            }
+        }
         CSStruct {
-            name: rust_struct.ident.to_string()
+            name: rust_struct.ident.to_string(),
+            fields
         }
     }
 
     pub fn to_string(&self) -> String {
-        format!("// TODO: Define struct {}", self.name)
+        let fields: Vec<String> = self.fields.iter().map(|f| f.name.clone()).collect();
+        format!("// TODO: Define struct {} w/ fields {}", self.name, fields.join(", "))
     }
 }
 
