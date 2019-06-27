@@ -5,6 +5,12 @@ struct CSStruct {
 }
 
 impl CSStruct {
+    pub fn from_rust_struct(rust_struct: &syn::ItemStruct) -> Self {
+        CSStruct {
+            name: rust_struct.ident.to_string()
+        }
+    }
+
     pub fn to_string(&self) -> String {
         format!("// TODO: Define struct {}", self.name)
     }
@@ -15,22 +21,48 @@ struct CSFunc {
 }
 
 impl CSFunc {
+    pub fn from_rust_struct(rust_fn: &syn::ItemFn) -> Self {
+        CSFunc {
+            name: rust_fn.ident.to_string()
+        }
+    }
+
     pub fn to_string(&self) -> String {
         format!("// TODO: Define fn {}()", self.name)
     }
 }
 
-struct CSProgram {
+struct CSFile {
     structs: Vec<CSStruct>,
     funcs: Vec<CSFunc>
 }
 
-impl CSProgram {
+impl CSFile {
     pub fn new() -> Self {
-        CSProgram {
+        CSFile {
             structs: vec![],
             funcs: vec![]
         }
+    }
+
+    pub fn from_rust_file(rust_file: &syn::File) -> Self {
+        let mut program = Self::new();
+
+        for item in rust_file.items.iter() {
+            match item {
+                Item::Struct(item_struct) => {
+                    program.structs.push(CSStruct::from_rust_struct(&item_struct));
+                },
+                Item::Fn(item_fn) => {
+                    if item_fn.abi.is_some() {
+                        program.funcs.push(CSFunc::from_rust_struct(&item_fn));
+                    }
+                },
+                _ => {}
+            }
+        }
+
+        program
     }
 
     pub fn to_string(&self) -> String {
@@ -47,33 +79,9 @@ impl CSProgram {
     }
 }
 
-fn into_cs_program(syntax: syn::File) -> CSProgram {
-    let mut program = CSProgram::new();
-
-    for item in syntax.items.iter() {
-        match item {
-            Item::Struct(item_struct) => {
-                program.structs.push(CSStruct {
-                    name: item_struct.ident.to_string()
-                });
-            },
-            Item::Fn(item_fn) => {
-                if item_fn.abi.is_some() {
-                    program.funcs.push(CSFunc {
-                        name: item_fn.ident.to_string()
-                    });
-                }
-            },
-            _ => {}
-        }
-    }
-
-    program
-}
-
 pub fn create_csharp_bindings(rust_code: &String) -> String {
     let syntax = syn::parse_file(&rust_code).expect("unable to parse rust source file");
-    let program = into_cs_program(syntax);
+    let program = CSFile::from_rust_file(&syntax);
 
     program.to_string()
 }
