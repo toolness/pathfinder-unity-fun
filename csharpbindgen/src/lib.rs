@@ -1,13 +1,49 @@
 use syn::Item;
 
+struct CSType {
+    name: String,
+    is_ptr: bool
+}
+
+impl CSType {
+    pub fn from_rust_type(rust_type: &syn::Type) -> Self {
+        match rust_type {
+            syn::Type::Path(type_path) => {
+                let last = type_path.path.segments.last()
+                  .expect("expected at least one path segment on type!");
+                CSType {
+                    name: last.value().ident.to_string(),
+                    is_ptr: false
+                }
+            },
+            syn::Type::Ptr(type_ptr) => {
+                let mut wrapped_type = CSType::from_rust_type(&type_ptr.elem);
+                wrapped_type.is_ptr = true;
+                wrapped_type
+            },
+            _ => { panic!("Unsupported type: {:?}", rust_type) }
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        if self.is_ptr {
+            format!("*{}", self.name)
+        } else {
+            self.name.clone()
+        }
+    }
+}
+
 struct CSStructField {
     name: String,
+    ty: CSType,
 }
 
 impl CSStructField {
     pub fn from_named_rust_field(rust_field: &syn::Field) -> Self {
         CSStructField {
-            name: rust_field.ident.as_ref().unwrap().to_string()
+            name: rust_field.ident.as_ref().unwrap().to_string(),
+            ty: CSType::from_rust_type(&rust_field.ty)
         }
     }
 }
@@ -33,13 +69,17 @@ impl CSStruct {
     }
 
     pub fn to_string(&self) -> String {
-        let fields: Vec<String> = self.fields.iter().map(|f| f.name.clone()).collect();
+        let fields: Vec<String> = self.fields
+          .iter()
+          .map(|f| format!("{}: {}", f.name, f.ty.to_string()))
+          .collect();
         format!("// TODO: Define struct {} {{ {} }}", self.name, fields.join(", "))
     }
 }
 
 struct CSFuncArg {
     name: String,
+    ty: CSType
 }
 
 impl CSFuncArg {
@@ -47,7 +87,8 @@ impl CSFuncArg {
         if let syn::Pat::Ident(pat_ident) = &rust_arg.pat {
             let name = pat_ident.ident.to_string();
             CSFuncArg {
-                name
+                name,
+                ty: CSType::from_rust_type(&rust_arg.ty)
             }
         } else {
             panic!("Unexpected captured arg pattern {:?}", rust_arg.pat);
@@ -80,7 +121,9 @@ impl CSFunc {
 
     pub fn to_string(&self) -> String {
         let arg_names: Vec<String> = self.args
-          .iter().map(|arg| arg.name.clone()).collect();
+          .iter()
+          .map(|f| format!("{}: {}", f.name, f.ty.to_string()))
+          .collect();
         format!("// TODO: Define fn {}({})", self.name, arg_names.join(", "))
     }
 }
