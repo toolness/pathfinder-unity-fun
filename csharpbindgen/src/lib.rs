@@ -1,4 +1,21 @@
 use syn::Item;
+use std::collections::BTreeSet;
+
+type IgnoreSet = BTreeSet<String>;
+
+struct CSTypeDef {
+    name: String,
+    ty: CSType
+}
+
+impl CSTypeDef {
+    pub fn from_rust_type_def(rust_type_def: &syn::ItemType) -> Self {
+        CSTypeDef {
+            name: rust_type_def.ident.to_string(),
+            ty: CSType::from_rust_type(&rust_type_def.ty)
+        }
+    }
+}
 
 struct CSType {
     name: String,
@@ -130,18 +147,20 @@ impl CSFunc {
 
 struct CSFile {
     structs: Vec<CSStruct>,
-    funcs: Vec<CSFunc>
+    funcs: Vec<CSFunc>,
+    type_defs: Vec<CSTypeDef>
 }
 
 impl CSFile {
     pub fn new() -> Self {
         CSFile {
             structs: vec![],
-            funcs: vec![]
+            funcs: vec![],
+            type_defs: vec![]
         }
     }
 
-    pub fn from_rust_file(rust_file: &syn::File) -> Self {
+    pub fn from_rust_file(rust_file: &syn::File, ignore: &IgnoreSet) -> Self {
         let mut program = Self::new();
 
         for item in rust_file.items.iter() {
@@ -152,6 +171,11 @@ impl CSFile {
                 Item::Fn(item_fn) => {
                     if item_fn.abi.is_some() {
                         program.funcs.push(CSFunc::from_rust_fn(&item_fn));
+                    }
+                },
+                Item::Type(item_type) => {
+                    if !ignore.contains(&item_type.ident.to_string()) {
+                        program.type_defs.push(CSTypeDef::from_rust_type_def(&item_type));
                     }
                 },
                 _ => {}
@@ -175,9 +199,20 @@ impl CSFile {
     }
 }
 
-pub fn create_csharp_bindings(rust_code: &String) -> String {
+fn create_ignore_set(ignore: &[&str]) -> IgnoreSet {
+    let mut result = BTreeSet::new();
+
+    for name in ignore.iter() {
+        result.insert(String::from(*name));
+    }
+
+    result
+}
+
+pub fn create_csharp_bindings(rust_code: &String, ignore: &[&str]) -> String {
     let syntax = syn::parse_file(&rust_code).expect("unable to parse rust source file");
-    let program = CSFile::from_rust_file(&syntax);
+    let ignore_set = create_ignore_set(ignore);
+    let program = CSFile::from_rust_file(&syntax, &ignore_set);
 
     program.to_string()
 }

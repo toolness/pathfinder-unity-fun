@@ -13,7 +13,9 @@ fn main() {
 
     let code = fs::read_to_string(path).expect("unable to read rust source file");
 
-    let bindings_code = csharpbindgen::create_csharp_bindings(&code);
+    let bindings_code = csharpbindgen::create_csharp_bindings(&code, &[
+        "PFGLFunctionLoader"
+    ]);
 
     println!("{}", bindings_code);
 }
