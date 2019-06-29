@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use syn::Item;
 
 pub mod ignores;
@@ -36,6 +37,10 @@ impl CSType {
             },
             syn::Type::Ptr(type_ptr) => {
                 let mut wrapped_type = CSType::from_rust_type(&type_ptr.elem);
+                assert_ne!(
+                    wrapped_type.is_ptr, true,
+                    "Double pointers for {} are unsupported!", wrapped_type.name
+                );
                 wrapped_type.is_ptr = true;
                 wrapped_type
             },
@@ -149,7 +154,7 @@ impl CSFunc {
 struct CSFile {
     structs: Vec<CSStruct>,
     funcs: Vec<CSFunc>,
-    type_defs: Vec<CSTypeDef>
+    type_defs: HashMap<String, CSTypeDef>
 }
 
 impl CSFile {
@@ -157,7 +162,7 @@ impl CSFile {
         CSFile {
             structs: vec![],
             funcs: vec![],
-            type_defs: vec![]
+            type_defs: HashMap::new()
         }
     }
 
@@ -180,14 +185,32 @@ impl CSFile {
                 },
                 Item::Type(item_type) => {
                     if !ignores.ignore(&item_type.ident) {
-                        program.type_defs.push(CSTypeDef::from_rust_type_def(&item_type));
+                        let type_def = CSTypeDef::from_rust_type_def(&item_type);
+                        program.type_defs.insert(type_def.name.clone(), type_def);
                     }
                 },
                 _ => {}
             }
         }
 
+        program.resolve_types();
         program
+    }
+
+    fn resolve_types(&mut self) {
+        for func in self.funcs.iter() {
+            for arg in func.args.iter() {
+                if let Some(type_def) = self.type_defs.get(&arg.ty.name) {
+                    println!("// TODO: Resolve arg {} to type def {}", arg.name, type_def.name);
+                    assert!(
+                        !(arg.ty.is_ptr && type_def.ty.is_ptr),
+                        "Double pointer to {} via type {} is unsupported!",
+                        type_def.ty.name,
+                        type_def.name
+                    );
+                }
+            }
+        }
     }
 
     pub fn to_string(&self) -> String {

@@ -17,6 +17,7 @@ fn main() {
     let code = fs::read_to_string(path).expect("unable to read rust source file");
     let ignores = Ignores::from_static_array(&[
         "PFGLFunctionLoader",
+        "PFCanvasFontContextCreateWithFonts",
         "PFMetal*"
     ]);
     let bindings_code = create_csharp_bindings(&code, &ignores);
