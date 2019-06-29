@@ -19,6 +19,7 @@ impl CSTypeDef {
     }
 }
 
+#[derive(Clone)]
 struct CSType {
     name: String,
     is_ptr: bool
@@ -198,16 +199,16 @@ impl CSFile {
     }
 
     fn resolve_types(&mut self) {
-        for func in self.funcs.iter() {
-            for arg in func.args.iter() {
+        for func in self.funcs.iter_mut() {
+            for arg in func.args.iter_mut() {
                 if let Some(type_def) = self.type_defs.get(&arg.ty.name) {
-                    println!("// TODO: Resolve arg {} to type def {}", arg.name, type_def.name);
                     assert!(
                         !(arg.ty.is_ptr && type_def.ty.is_ptr),
                         "Double pointer to {} via type {} is unsupported!",
                         type_def.ty.name,
                         type_def.name
                     );
+                    arg.ty = type_def.ty.clone();
                 }
             }
         }
