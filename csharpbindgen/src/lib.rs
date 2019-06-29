@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use syn::Item;
 use std::fmt::{Formatter, Display};
 use std::fmt;
+use std::rc::Rc;
 
 pub mod ignores;
 
@@ -26,7 +27,8 @@ impl CSTypeDef {
 #[derive(Clone)]
 struct CSType {
     name: String,
-    is_ptr: bool
+    is_ptr: bool,
+    st: Option<Rc<CSStruct>>
 }
 
 impl CSType {
@@ -37,7 +39,8 @@ impl CSType {
                   .expect("expected at least one path segment on type!");
                 CSType {
                     name: last.value().ident.to_string(),
-                    is_ptr: false
+                    is_ptr: false,
+                    st: None
                 }
             },
             syn::Type::Ptr(type_ptr) => {
@@ -57,7 +60,11 @@ impl CSType {
 impl Display for CSType {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         if self.is_ptr {
-            write!(f, "*{}", self.name)
+            if self.st.is_some() {
+                write!(f, "ref {}", self.name)
+            } else {
+                write!(f, "IntPtr /* {} */", self.name)
+            }
         } else {
             write!(f, "{}", self.name)
         }
@@ -180,7 +187,7 @@ impl Display for CSFunc {
 struct CSFile {
     class_name: String,
     dll_name: String,
-    structs: Vec<CSStruct>,
+    structs: Vec<Rc<CSStruct>>,
     funcs: Vec<CSFunc>,
     type_defs: HashMap<String, CSTypeDef>
 }
@@ -201,7 +208,8 @@ impl CSFile {
             match item {
                 Item::Struct(item_struct) => {
                     if !ignores.ignore(&item_struct.ident) {
-                        self.structs.push(CSStruct::from_rust_struct(&item_struct));
+                        let s = Rc::new(CSStruct::from_rust_struct(&item_struct));
+                        self.structs.push(s);
                     }
                 },
                 Item::Fn(item_fn) => {
@@ -223,10 +231,19 @@ impl CSFile {
     }
 
     fn resolve_types(&mut self) {
+        let mut struct_map: HashMap<&str, &Rc<CSStruct>> = HashMap::new();
+
+        for st in self.structs.iter() {
+            struct_map.insert(&st.name, &st);
+        }
+
         for func in self.funcs.iter_mut() {
             for arg in func.args.iter_mut() {
                 if let Some(ty) = resolve_type_def(&arg.ty, &self.type_defs) {
                     arg.ty = ty;
+                }
+                if let Some(st) = struct_map.get(&arg.ty.name.as_ref()) {
+                    arg.ty.st = Some((*st).clone());
                 }
             }
             if let Some(return_ty) = &func.return_ty {
