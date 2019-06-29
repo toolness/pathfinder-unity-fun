@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use syn::Item;
+use std::fmt::{Formatter, Display};
+use std::fmt;
 
 pub mod ignores;
 
@@ -48,12 +50,14 @@ impl CSType {
             _ => { panic!("Unsupported type: {:?}", rust_type) }
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl Display for CSType {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         if self.is_ptr {
-            format!("*{}", self.name)
+            write!(f, "*{}", self.name)
         } else {
-            self.name.clone()
+            write!(f, "{}", self.name)
         }
     }
 }
@@ -91,13 +95,15 @@ impl CSStruct {
             fields
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl Display for CSStruct {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let fields: Vec<String> = self.fields
           .iter()
           .map(|f| format!("{}: {}", f.name, f.ty.to_string()))
           .collect();
-        format!("// TODO: Define struct {} {{ {} }}", self.name, fields.join(", "))
+        writeln!(f, "// TODO: Define struct {} {{ {} }}", self.name, fields.join(", "))
     }
 }
 
@@ -151,8 +157,10 @@ impl CSFunc {
             return_ty
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl Display for CSFunc {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let arg_names: Vec<String> = self.args
           .iter()
           .map(|f| format!("{}: {}", f.name, f.ty.to_string()))
@@ -161,7 +169,7 @@ impl CSFunc {
             None => String::from("void"),
             Some(ty) => ty.to_string()
         };
-        format!("// TODO: Define fn {}({}) -> {}", self.name, arg_names.join(", "), return_ty)
+        writeln!(f, "// TODO: Define fn {}({}) -> {}", self.name, arg_names.join(", "), return_ty)
     }
 }
 
@@ -225,26 +233,24 @@ impl CSFile {
             }
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        let mut lines = Vec::new();
-
+impl Display for CSFile {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         for st in self.structs.iter() {
-            lines.push(st.to_string());
+            write!(f, "{}", st)?;
         }
         for func in self.funcs.iter() {
-            lines.push(func.to_string());
+            write!(f, "{}", func)?;
         }
-
-        lines.join("\n")
+        Ok(())
     }
 }
 
 pub fn create_csharp_bindings(rust_code: &String, ignores: &Ignores) -> String {
     let syntax = syn::parse_file(&rust_code).expect("unable to parse rust source file");
     let program = CSFile::from_rust_file(&syntax, ignores);
-
-    program.to_string()
+    format!("{}", program)
 }
 
 fn resolve_type_def(ty: &CSType, type_defs: &HashMap<String, CSTypeDef>) -> Option<CSType> {
