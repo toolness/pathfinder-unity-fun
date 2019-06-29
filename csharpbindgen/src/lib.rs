@@ -99,11 +99,13 @@ impl CSStruct {
 
 impl Display for CSStruct {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let fields: Vec<String> = self.fields
-          .iter()
-          .map(|f| format!("{}: {}", f.name, f.ty.to_string()))
-          .collect();
-        writeln!(f, "// TODO: Define struct {} {{ {} }}", self.name, fields.join(", "))
+        writeln!(f, "[Serializable]")?;
+        writeln!(f, "[StructLayout(LayoutKind.Sequential)]")?;
+        writeln!(f, "struct {} {{", self.name)?;
+        for field in self.fields.iter() {
+            writeln!(f, "  public {} {};", field.ty, field.name)?;
+        }
+        writeln!(f, "}}")
     }
 }
 
@@ -238,10 +240,10 @@ impl CSFile {
 impl Display for CSFile {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         for st in self.structs.iter() {
-            write!(f, "{}", st)?;
+            writeln!(f, "{}", st)?;
         }
         for func in self.funcs.iter() {
-            write!(f, "{}", func)?;
+            writeln!(f, "{}", func)?;
         }
         Ok(())
     }
