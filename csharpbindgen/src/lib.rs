@@ -44,8 +44,13 @@ struct CSFuncArg {
 
 impl CSFuncArg {
     pub fn from_rust_arg_captured(rust_arg: &syn::ArgCaptured) -> Self {
-        CSFuncArg {
-            name: String::from("unknown") // TODO: Get actual arg name.
+        if let syn::Pat::Ident(pat_ident) = &rust_arg.pat {
+            let name = pat_ident.ident.to_string();
+            CSFuncArg {
+                name
+            }
+        } else {
+            panic!("Unexpected captured arg pattern {:?}", rust_arg.pat);
         }
     }
 }
@@ -56,10 +61,16 @@ struct CSFunc {
 }
 
 impl CSFunc {
-    pub fn from_rust_struct(rust_fn: &syn::ItemFn) -> Self {
-        let args = vec![];
+    pub fn from_rust_fn(rust_fn: &syn::ItemFn) -> Self {
+        let mut args = vec![];
 
-        // TODO: Populate args.
+        for input in rust_fn.decl.inputs.iter() {
+            if let syn::FnArg::Captured(cap) = input {
+                args.push(CSFuncArg::from_rust_arg_captured(&cap));
+            } else {
+                panic!("Unexpected input {:?}", input);
+            }
+        }
 
         CSFunc {
             name: rust_fn.ident.to_string(),
@@ -68,8 +79,9 @@ impl CSFunc {
     }
 
     pub fn to_string(&self) -> String {
-        // TODO: List args.
-        format!("// TODO: Define fn {}()", self.name)
+        let arg_names: Vec<String> = self.args
+          .iter().map(|arg| arg.name.clone()).collect();
+        format!("// TODO: Define fn {}({})", self.name, arg_names.join(", "))
     }
 }
 
@@ -96,7 +108,7 @@ impl CSFile {
                 },
                 Item::Fn(item_fn) => {
                     if item_fn.abi.is_some() {
-                        program.funcs.push(CSFunc::from_rust_struct(&item_fn));
+                        program.funcs.push(CSFunc::from_rust_fn(&item_fn));
                     }
                 },
                 _ => {}
