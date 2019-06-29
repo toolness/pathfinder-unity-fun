@@ -20,7 +20,7 @@ fn main() {
         "PFCanvasFontContextCreateWithFonts",
         "PFMetal*"
     ]);
-    let bindings_code = create_csharp_bindings(&code, &ignores);
+    let bindings_code = create_csharp_bindings("PF", "GfxPluginPathfinder", &code, &ignores);
 
     println!("{}", bindings_code);
 }

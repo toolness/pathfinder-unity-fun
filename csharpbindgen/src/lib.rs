@@ -7,6 +7,8 @@ pub mod ignores;
 
 use ignores::Ignores;
 
+const INDENT: &'static str = "    ";
+
 struct CSTypeDef {
     name: String,
     ty: CSType
@@ -103,7 +105,7 @@ impl Display for CSStruct {
         writeln!(f, "[StructLayout(LayoutKind.Sequential)]")?;
         writeln!(f, "struct {} {{", self.name)?;
         for field in self.fields.iter() {
-            writeln!(f, "  public {} {};", field.ty, field.name)?;
+            writeln!(f, "{}public {} {};", INDENT, field.ty, field.name)?;
         }
         writeln!(f, "}}")
     }
@@ -163,62 +165,61 @@ impl CSFunc {
 
 impl Display for CSFunc {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let arg_names: Vec<String> = self.args
-          .iter()
-          .map(|f| format!("{}: {}", f.name, f.ty.to_string()))
-          .collect();
         let return_ty = match &self.return_ty {
             None => String::from("void"),
             Some(ty) => ty.to_string()
         };
-        writeln!(f, "// TODO: Define fn {}({}) -> {}", self.name, arg_names.join(", "), return_ty)
+        let args: Vec<String> = self.args
+          .iter()
+          .map(|arg| format!("{} {}", arg.ty, arg.name))
+          .collect();
+        write!(f, "public static extern {} {}({});", return_ty, self.name, args.join(", "))
     }
 }
 
 struct CSFile {
+    class_name: String,
+    dll_name: String,
     structs: Vec<CSStruct>,
     funcs: Vec<CSFunc>,
     type_defs: HashMap<String, CSTypeDef>
 }
 
 impl CSFile {
-    pub fn new() -> Self {
+    pub fn new<T: AsRef<str>>(class_name: T, dll_name: T) -> Self {
         CSFile {
+            class_name: String::from(class_name.as_ref()),
+            dll_name: String::from(dll_name.as_ref()),
             structs: vec![],
             funcs: vec![],
             type_defs: HashMap::new()
         }
     }
 
-    pub fn from_rust_file(rust_file: &syn::File, ignores: &Ignores) -> Self {
-        let mut program = Self::new();
-
+    pub fn populate_from_rust_file(&mut self, rust_file: &syn::File, ignores: &Ignores) {
         for item in rust_file.items.iter() {
             match item {
                 Item::Struct(item_struct) => {
                     if !ignores.ignore(&item_struct.ident) {
-                        program.structs.push(CSStruct::from_rust_struct(&item_struct));
+                        self.structs.push(CSStruct::from_rust_struct(&item_struct));
                     }
                 },
                 Item::Fn(item_fn) => {
                     if item_fn.abi.is_some() {
                         if !ignores.ignore(&item_fn.ident) {
-                            program.funcs.push(CSFunc::from_rust_fn(&item_fn));
+                            self.funcs.push(CSFunc::from_rust_fn(&item_fn));
                         }
                     }
                 },
                 Item::Type(item_type) => {
                     if !ignores.ignore(&item_type.ident) {
                         let type_def = CSTypeDef::from_rust_type_def(&item_type);
-                        program.type_defs.insert(type_def.name.clone(), type_def);
+                        self.type_defs.insert(type_def.name.clone(), type_def);
                     }
                 },
                 _ => {}
             }
         }
-
-        program.resolve_types();
-        program
     }
 
     fn resolve_types(&mut self) {
@@ -242,16 +243,25 @@ impl Display for CSFile {
         for st in self.structs.iter() {
             writeln!(f, "{}", st)?;
         }
+        writeln!(f, "class {} {{", self.class_name)?;
         for func in self.funcs.iter() {
-            writeln!(f, "{}", func)?;
+            writeln!(f, "{}[DllImport(\"{}\")]", INDENT, self.dll_name)?;
+            writeln!(f, "{}{}\n", INDENT, func)?;
         }
-        Ok(())
+        writeln!(f, "}}")
     }
 }
 
-pub fn create_csharp_bindings(rust_code: &String, ignores: &Ignores) -> String {
+pub fn create_csharp_bindings<T: AsRef<str>>(
+    class_name: T,
+    dll_name: T,
+    rust_code: &String,
+    ignores: &Ignores
+) -> String {
     let syntax = syn::parse_file(&rust_code).expect("unable to parse rust source file");
-    let program = CSFile::from_rust_file(&syntax, ignores);
+    let mut program = CSFile::new(class_name, dll_name);
+    program.populate_from_rust_file(&syntax, ignores);
+    program.resolve_types();
     format!("{}", program)
 }
 
