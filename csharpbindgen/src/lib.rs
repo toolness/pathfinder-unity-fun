@@ -1,7 +1,8 @@
 use syn::Item;
-use std::collections::BTreeSet;
 
-type IgnoreSet = BTreeSet<String>;
+pub mod ignores;
+
+use ignores::Ignores;
 
 struct CSTypeDef {
     name: String,
@@ -160,7 +161,7 @@ impl CSFile {
         }
     }
 
-    pub fn from_rust_file(rust_file: &syn::File, ignore: &IgnoreSet) -> Self {
+    pub fn from_rust_file(rust_file: &syn::File, ignores: &Ignores) -> Self {
         let mut program = Self::new();
 
         for item in rust_file.items.iter() {
@@ -174,7 +175,7 @@ impl CSFile {
                     }
                 },
                 Item::Type(item_type) => {
-                    if !ignore.contains(&item_type.ident.to_string()) {
+                    if !ignores.ignore(&item_type.ident) {
                         program.type_defs.push(CSTypeDef::from_rust_type_def(&item_type));
                     }
                 },
@@ -199,20 +200,9 @@ impl CSFile {
     }
 }
 
-fn create_ignore_set(ignore: &[&str]) -> IgnoreSet {
-    let mut result = BTreeSet::new();
-
-    for name in ignore.iter() {
-        result.insert(String::from(*name));
-    }
-
-    result
-}
-
-pub fn create_csharp_bindings(rust_code: &String, ignore: &[&str]) -> String {
+pub fn create_csharp_bindings(rust_code: &String, ignores: &Ignores) -> String {
     let syntax = syn::parse_file(&rust_code).expect("unable to parse rust source file");
-    let ignore_set = create_ignore_set(ignore);
-    let program = CSFile::from_rust_file(&syntax, &ignore_set);
+    let program = CSFile::from_rust_file(&syntax, ignores);
 
     program.to_string()
 }
