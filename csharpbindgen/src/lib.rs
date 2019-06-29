@@ -122,7 +122,8 @@ impl CSFuncArg {
 
 struct CSFunc {
     name: String,
-    args: Vec<CSFuncArg>
+    args: Vec<CSFuncArg>,
+    return_ty: Option<CSType>
 }
 
 impl CSFunc {
@@ -137,9 +138,17 @@ impl CSFunc {
             }
         }
 
+        let return_ty = match &rust_fn.decl.output {
+            syn::ReturnType::Default => None,
+            syn::ReturnType::Type(_, ty) => {
+                Some(CSType::from_rust_type(&ty))
+            }
+        };
+
         CSFunc {
             name: rust_fn.ident.to_string(),
-            args
+            args,
+            return_ty
         }
     }
 
@@ -148,7 +157,11 @@ impl CSFunc {
           .iter()
           .map(|f| format!("{}: {}", f.name, f.ty.to_string()))
           .collect();
-        format!("// TODO: Define fn {}({})", self.name, arg_names.join(", "))
+        let return_ty = match &self.return_ty {
+            None => String::from("void"),
+            Some(ty) => ty.to_string()
+        };
+        format!("// TODO: Define fn {}({}) -> {}", self.name, arg_names.join(", "), return_ty)
     }
 }
 
@@ -201,14 +214,13 @@ impl CSFile {
     fn resolve_types(&mut self) {
         for func in self.funcs.iter_mut() {
             for arg in func.args.iter_mut() {
-                if let Some(type_def) = self.type_defs.get(&arg.ty.name) {
-                    assert!(
-                        !(arg.ty.is_ptr && type_def.ty.is_ptr),
-                        "Double pointer to {} via type {} is unsupported!",
-                        type_def.ty.name,
-                        type_def.name
-                    );
-                    arg.ty = type_def.ty.clone();
+                if let Some(ty) = resolve_type_def(&arg.ty, &self.type_defs) {
+                    arg.ty = ty;
+                }
+            }
+            if let Some(return_ty) = &func.return_ty {
+                if let Some(ty) = resolve_type_def(return_ty, &self.type_defs) {
+                    func.return_ty = Some(ty);
                 }
             }
         }
@@ -233,4 +245,18 @@ pub fn create_csharp_bindings(rust_code: &String, ignores: &Ignores) -> String {
     let program = CSFile::from_rust_file(&syntax, ignores);
 
     program.to_string()
+}
+
+fn resolve_type_def(ty: &CSType, type_defs: &HashMap<String, CSTypeDef>) -> Option<CSType> {
+    if let Some(type_def) = type_defs.get(&ty.name) {
+        assert!(
+            !(ty.is_ptr && type_def.ty.is_ptr),
+            "Double pointer to {} via type {} is unsupported!",
+            type_def.ty.name,
+            type_def.name
+        );
+        Some(type_def.ty.clone())
+    } else {
+        None
+    }
 }
