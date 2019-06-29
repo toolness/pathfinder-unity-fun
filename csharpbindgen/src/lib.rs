@@ -34,7 +34,7 @@ impl CSStruct {
 
     pub fn to_string(&self) -> String {
         let fields: Vec<String> = self.fields.iter().map(|f| f.name.clone()).collect();
-        format!("// TODO: Define struct {} w/ fields {}", self.name, fields.join(", "))
+        format!("// TODO: Define struct {} {{ {} }}", self.name, fields.join(", "))
     }
 }
 
