@@ -167,11 +167,15 @@ impl CSFile {
         for item in rust_file.items.iter() {
             match item {
                 Item::Struct(item_struct) => {
-                    program.structs.push(CSStruct::from_rust_struct(&item_struct));
+                    if !ignores.ignore(&item_struct.ident) {
+                        program.structs.push(CSStruct::from_rust_struct(&item_struct));
+                    }
                 },
                 Item::Fn(item_fn) => {
                     if item_fn.abi.is_some() {
-                        program.funcs.push(CSFunc::from_rust_fn(&item_fn));
+                        if !ignores.ignore(&item_fn.ident) {
+                            program.funcs.push(CSFunc::from_rust_fn(&item_fn));
+                        }
                     }
                 },
                 Item::Type(item_type) => {
