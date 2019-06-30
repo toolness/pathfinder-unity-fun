@@ -84,6 +84,10 @@ impl CSStructField {
             ty: CSType::from_rust_type(&rust_field.ty)
         }
     }
+
+    pub fn to_string(&self) -> String {
+        to_cs_var_decl(&self.ty, &self.name)
+    }
 }
 
 struct CSStruct {
@@ -113,8 +117,20 @@ impl Display for CSStruct {
         writeln!(f, "[StructLayout(LayoutKind.Sequential)]")?;
         writeln!(f, "struct {} {{", self.name)?;
         for field in self.fields.iter() {
-            writeln!(f, "{}public {} {};", INDENT, field.ty, field.name)?;
+            writeln!(f, "{}public {};", INDENT, field.to_string())?;
         }
+
+        let constructor_args: Vec<String> = self.fields
+          .iter()
+          .map(|field| field.to_string())
+          .collect();
+        writeln!(f, "\n{}public {}({}) {{", INDENT, self.name, constructor_args.join(", "))?;
+        for field in self.fields.iter() {
+            let name = munge_cs_name(&field.name);
+            writeln!(f, "{}{}this.{} = {};", INDENT, INDENT, name, name)?;
+        }
+        writeln!(f, "{}}}", INDENT)?;
+
         writeln!(f, "}}")
     }
 }
@@ -138,7 +154,7 @@ impl CSFuncArg {
     }
 
     pub fn to_string(&self) -> String {
-        format!("{} {}", self.ty, munge_cs_name(&self.name))
+        to_cs_var_decl(&self.ty, &self.name)
     }
 }
 
@@ -321,4 +337,8 @@ fn to_cs_primitive<'a>(type_name: &'a str) -> &'a str {
         "usize" => "UIntPtr",
         _ => type_name
     }
+}
+
+fn to_cs_var_decl<T: AsRef<str>>(ty: &CSType, name: T) -> String {
+    format!("{} {}", ty, munge_cs_name(name.as_ref()))
 }
