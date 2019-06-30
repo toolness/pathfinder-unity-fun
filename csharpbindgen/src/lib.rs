@@ -136,6 +136,10 @@ impl CSFuncArg {
             panic!("Unexpected captured arg pattern {:?}", rust_arg.pat);
         }
     }
+
+    pub fn to_string(&self) -> String {
+        format!("{} {}", self.ty, munge_cs_name(&self.name))
+    }
 }
 
 struct CSFunc {
@@ -179,7 +183,7 @@ impl Display for CSFunc {
         };
         let args: Vec<String> = self.args
           .iter()
-          .map(|arg| format!("{} {}", arg.ty, arg.name))
+          .map(|arg| arg.to_string())
           .collect();
         write!(f, "public static extern {} {}({});", return_ty, self.name, args.join(", "))
     }
@@ -258,6 +262,9 @@ impl CSFile {
 
 impl Display for CSFile {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        writeln!(f, "using System;")?;
+        writeln!(f, "using System.Runtime.InteropServices;\n")?;
+
         for st in self.structs.iter() {
             writeln!(f, "{}", st)?;
         }
@@ -297,10 +304,19 @@ fn resolve_type_def(ty: &CSType, type_defs: &HashMap<String, CSTypeDef>) -> Opti
     }
 }
 
+fn munge_cs_name<'a>(name: &'a str) -> &'a str {
+    match name {
+        "string" => "str",
+        _ => name
+    }
+}
+
 fn to_cs_primitive<'a>(type_name: &'a str) -> &'a str {
     match type_name {
+        "u8" => "byte",
         "f32" => "float",
         "i32" => "Int32",
+        "u32" => "UInt32",
         "usize" => "UIntPtr",
         _ => type_name
     }

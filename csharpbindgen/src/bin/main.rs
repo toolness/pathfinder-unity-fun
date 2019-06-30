@@ -18,6 +18,10 @@ fn main() {
     let ignores = Ignores::from_static_array(&[
         "PFGLFunctionLoader",
         "PFCanvasFontContextCreateWithFonts",
+        "PFCanvasCreateScene",
+        "PFRendererOptions",
+        "PFScene*",
+        "PFGL*",
         "PFMetal*"
     ]);
     let bindings_code = create_csharp_bindings("PF", "GfxPluginPathfinder", &code, &ignores);
