@@ -59,14 +59,15 @@ impl CSType {
 
 impl Display for CSType {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let name = to_cs_primitive(&self.name);
         if self.is_ptr {
             if self.st.is_some() {
-                write!(f, "ref {}", self.name)
+                write!(f, "ref {}", name)
             } else {
-                write!(f, "IntPtr /* {} */", self.name)
+                write!(f, "IntPtr /* {} */", name)
             }
         } else {
-            write!(f, "{}", self.name)
+            write!(f, "{}", name)
         }
     }
 }
@@ -293,5 +294,14 @@ fn resolve_type_def(ty: &CSType, type_defs: &HashMap<String, CSTypeDef>) -> Opti
         Some(type_def.ty.clone())
     } else {
         None
+    }
+}
+
+fn to_cs_primitive<'a>(type_name: &'a str) -> &'a str {
+    match type_name {
+        "f32" => "float",
+        "i32" => "Int32",
+        "usize" => "UIntPtr",
+        _ => type_name
     }
 }
