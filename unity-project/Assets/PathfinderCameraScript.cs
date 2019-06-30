@@ -34,8 +34,6 @@ public class PathfinderCameraScript : MonoBehaviour
 
         canvas.QueueForRendering();
 
-        GL.IssuePluginEvent(PFPluginExports.get_render_event_func(), 1);
-
         // This is temporary code just to make sure calls don't crash.
         path.Clone();
     }

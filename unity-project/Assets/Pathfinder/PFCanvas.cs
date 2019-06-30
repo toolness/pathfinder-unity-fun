@@ -47,6 +47,7 @@ public class PFCanvas {
     public void QueueForRendering() {
         PFPluginExports.queue_canvas_for_rendering(handle);
         handle = IntPtr.Zero;
+        GL.IssuePluginEvent(PFPluginExports.get_render_event_func(), 1);
     }
 
     ~PFCanvas() {
