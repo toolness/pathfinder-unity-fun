@@ -262,6 +262,7 @@ impl CSFile {
 
 impl Display for CSFile {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        writeln!(f, "// This file has been auto-generated, please do not edit it.\n")?;
         writeln!(f, "using System;")?;
         writeln!(f, "using System.Runtime.InteropServices;\n")?;
 
