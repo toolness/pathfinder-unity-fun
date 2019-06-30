@@ -75,7 +75,7 @@ fn build_pathfinder_csharp_code() {
     ]);
     let bindings_code = create_csharp_bindings("PF", "GfxPluginPathfinder", &code, &ignores);
 
-    write_if_changed(&["unity-project", "Assets", "PF.cs"], &bindings_code);
+    write_if_changed(&["unity-project", "Assets", "Pathfinder", "PF.cs"], &bindings_code);
 }
 
 pub fn main() {
