@@ -27,10 +27,10 @@ impl Ignores {
         result
     }
 
-    pub fn ignore(&self, ident: &syn::Ident) -> bool {
-        let s = ident.to_string();
+    pub fn ignore_str<T: AsRef<str>>(&self, value: T) -> bool {
+        let s = value.as_ref();
 
-        if self.exact.contains(&s) {
+        if self.exact.contains(s) {
             return true;
         }
 
@@ -40,6 +40,30 @@ impl Ignores {
             }
         }
 
-        return false;
+        false
+    }
+
+    pub fn ignore(&self, ident: &syn::Ident) -> bool {
+        self.ignore_str(&ident.to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_it_works_with_exact_matches() {
+        let ig = Ignores::from_static_array(&["boop"]);
+        assert_eq!(ig.ignore_str("boop"), true);
+        assert_eq!(ig.ignore_str("boopy"), false);
+    }
+
+    #[test]
+    fn test_it_works_with_prefixes() {
+        let ig = Ignores::from_static_array(&["boop*"]);
+        assert_eq!(ig.ignore_str("boop"), true);
+        assert_eq!(ig.ignore_str("boopy"), true);
+        assert_eq!(ig.ignore_str("funkyboop"), false);
     }
 }
