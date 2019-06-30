@@ -4,80 +4,37 @@ using UnityEngine;
 using System;
 using System.Runtime.InteropServices;
 
-[Serializable]
-[StructLayout(LayoutKind.Sequential)]
-struct PFVector2F {
-    public float x;
-    public float y;
-
-    public PFVector2F(float x, float y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public static PFVector2F FromVector(Vector2 v) {
-        return new PFVector2F(v.x, v.y);
-    }
-}
-
-[Serializable]
-[StructLayout(LayoutKind.Sequential)]
-struct PFVector2I {
-    public Int32 x;
-    public Int32 y;
-
-    public PFVector2I(Int32 x, Int32 y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public static PFVector2I FromVector(Vector2Int v) {
-        return new PFVector2I(v.x, v.y);
-    }
-}
-
-[Serializable]
-[StructLayout(LayoutKind.Sequential)]
-struct PFRectF {
-    public PFVector2F origin;
-    public PFVector2F lower_right;
-
-    public PFRectF(PFVector2F origin, PFVector2F lower_right) {
-        this.origin = origin;
-        this.lower_right = lower_right;
-    }
-
-    public static PFRectF FromRect(Rect r) {
+struct PFUnity {
+    public static PFRectF PFRectF(Rect r) {
         var origin = new PFVector2F(r.xMin, r.yMin);
         var lower_right = new PFVector2F(r.xMax, r.yMax);
         return new PFRectF(origin, lower_right);
+    }
+
+    public static PFVector2I PFVector2I(Vector2Int v) {
+        return new PFVector2I(v.x, v.y);
+    }
+
+    public static PFVector2F PFVector2F(Vector2 v) {
+        return new PFVector2F(v.x, v.y);
     }
 }
 
 class PFCanvasFontContext {
     internal IntPtr handle;
 
-    [DllImport("GfxPluginPathfinder")]
-    private static extern IntPtr PFCanvasFontContextCreateWithSystemSource();
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFCanvasFontContextDestroy(IntPtr handle);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern IntPtr PFCanvasFontContextClone(IntPtr handle);
-
     public PFCanvasFontContext() {
-        handle = PFCanvasFontContextCreateWithSystemSource();
+        handle = PF.PFCanvasFontContextCreateWithSystemSource();
     }
 
     internal IntPtr PrepareToConsume() {
         var oldHandle = handle;
-        handle = PFCanvasFontContextClone(handle);
+        handle = PF.PFCanvasFontContextClone(handle);
         return oldHandle;
     }
 
     ~PFCanvasFontContext() {
-        PFCanvasFontContextDestroy(handle);
+        PF.PFCanvasFontContextDestroy(handle);
     }
 }
 
@@ -85,32 +42,11 @@ class PFCanvas {
     private IntPtr handle;
 
     [DllImport("GfxPluginPathfinder")]
-    private static extern IntPtr PFCanvasCreate(IntPtr fontContextHandle, ref PFVector2F size);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFCanvasDestroy(IntPtr handle);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFCanvasSetLineWidth(IntPtr handle, float new_line_width);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFCanvasStrokeRect(IntPtr handle, ref PFRectF rect);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFCanvasFillRect(IntPtr handle, ref PFRectF rect);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFCanvasStrokePath(IntPtr handle, IntPtr pathHandle);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFCanvasFillPath(IntPtr handle, IntPtr pathHandle);
-
-    [DllImport("GfxPluginPathfinder")]
     private static extern void queue_canvas_for_rendering(IntPtr handle);
 
     public PFCanvas(PFCanvasFontContext fontContext, Vector2 size) {
-        var pfSize = PFVector2F.FromVector(size);
-        handle = PFCanvasCreate(fontContext.PrepareToConsume(), ref pfSize);
+        var pfSize = PFUnity.PFVector2F(size);
+        handle = PF.PFCanvasCreate(fontContext.PrepareToConsume(), ref pfSize);
     }
 
     private void EnsureHandleIsValid() {
@@ -121,31 +57,31 @@ class PFCanvas {
 
     public void SetLineWidth(float width) {
         EnsureHandleIsValid();
-        PFCanvasSetLineWidth(handle, width);
+        PF.PFCanvasSetLineWidth(handle, width);
     }
 
     public void StrokeRect(Rect rect) {
         EnsureHandleIsValid();
-        var pfRect = PFRectF.FromRect(rect);
-        PFCanvasStrokeRect(handle, ref pfRect);
+        var pfRect = PFUnity.PFRectF(rect);
+        PF.PFCanvasStrokeRect(handle, ref pfRect);
     }
 
     public void FillRect(Rect rect) {
         EnsureHandleIsValid();
-        var pfRect = PFRectF.FromRect(rect);
-        PFCanvasFillRect(handle, ref pfRect);
+        var pfRect = PFUnity.PFRectF(rect);
+        PF.PFCanvasFillRect(handle, ref pfRect);
     }
 
     public void StrokePath(PFPath path) {
         EnsureHandleIsValid();
         var pathHandleToConsume = path.PrepareToConsume();
-        PFCanvasStrokePath(handle, pathHandleToConsume);
+        PF.PFCanvasStrokePath(handle, pathHandleToConsume);
     }
 
     public void FillPath(PFPath path) {
         EnsureHandleIsValid();
         var pathHandleToConsume = path.PrepareToConsume();
-        PFCanvasFillPath(handle, pathHandleToConsume);
+        PF.PFCanvasFillPath(handle, pathHandleToConsume);
     }
 
     public void QueueForRendering() {
@@ -155,7 +91,7 @@ class PFCanvas {
 
     ~PFCanvas() {
         if (handle != IntPtr.Zero) {
-            PFCanvasDestroy(handle);
+            PF.PFCanvasDestroy(handle);
         }
     }
 }
@@ -163,65 +99,41 @@ class PFCanvas {
 class PFPath {
     internal IntPtr handle;
 
-    [DllImport("GfxPluginPathfinder")]
-    private static extern IntPtr PFPathCreate();
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFPathDestroy(IntPtr handle);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern IntPtr PFPathClone(IntPtr handle);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFPathClosePath(IntPtr handle);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFPathMoveTo(IntPtr handle, ref PFVector2F to);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFPathLineTo(IntPtr handle, ref PFVector2F to);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFPathQuadraticCurveTo(IntPtr handle, ref PFVector2F ctrl, ref PFVector2F to);
-
-    [DllImport("GfxPluginPathfinder")]
-    private static extern void PFPathBezierCurveTo(IntPtr handle, ref PFVector2F ctrl0, ref PFVector2F ctrl1, ref PFVector2F to);
-
     public PFPath(PFPath targetToClone = null) {
         if (targetToClone != null) {
-            handle = PFPathClone(targetToClone.handle);
+            handle = PF.PFPathClone(targetToClone.handle);
         } else {
-            handle = PFPathCreate();
+            handle = PF.PFPathCreate();
         }
     }
 
     internal IntPtr PrepareToConsume() {
         var oldHandle = handle;
-        handle = PFPathClone(handle);
+        handle = PF.PFPathClone(handle);
         return oldHandle;
     }
 
     public void MoveTo(Vector2 to) {
-        var pfTo = PFVector2F.FromVector(to);
-        PFPathMoveTo(handle, ref pfTo);
+        var pfTo = PFUnity.PFVector2F(to);
+        PF.PFPathMoveTo(handle, ref pfTo);
     }
 
     public void LineTo(Vector2 to) {
-        var pfTo = PFVector2F.FromVector(to);
-        PFPathLineTo(handle, ref pfTo);
+        var pfTo = PFUnity.PFVector2F(to);
+        PF.PFPathLineTo(handle, ref pfTo);
     }
 
     public void QuadraticCurveTo(Vector2 ctrl, Vector2 to) {
-        var pfCtrl = PFVector2F.FromVector(ctrl);
-        var pfTo = PFVector2F.FromVector(to);
-        PFPathQuadraticCurveTo(handle, ref pfCtrl, ref pfTo);
+        var pfCtrl = PFUnity.PFVector2F(ctrl);
+        var pfTo = PFUnity.PFVector2F(to);
+        PF.PFPathQuadraticCurveTo(handle, ref pfCtrl, ref pfTo);
     }
 
     public void BezierCurveTo(Vector2 ctrl0, Vector2 ctrl1, Vector2 to) {
-        var pfCtrl0 = PFVector2F.FromVector(ctrl0);
-        var pfCtrl1 = PFVector2F.FromVector(ctrl1);
-        var pfTo = PFVector2F.FromVector(to);
-        PFPathBezierCurveTo(handle, ref pfCtrl0, ref pfCtrl1, ref pfTo);
+        var pfCtrl0 = PFUnity.PFVector2F(ctrl0);
+        var pfCtrl1 = PFUnity.PFVector2F(ctrl1);
+        var pfTo = PFUnity.PFVector2F(to);
+        PF.PFPathBezierCurveTo(handle, ref pfCtrl0, ref pfCtrl1, ref pfTo);
     }
 
     public PFPath Clone() {
@@ -229,11 +141,11 @@ class PFPath {
     }
 
     public void ClosePath() {
-        PFPathClosePath(handle);
+        PF.PFPathClosePath(handle);
     }
 
     ~PFPath() {
-        PFPathDestroy(handle);
+        PF.PFPathDestroy(handle);
     }
 }
 
