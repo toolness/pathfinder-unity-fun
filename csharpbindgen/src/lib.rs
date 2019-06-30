@@ -80,7 +80,7 @@ struct CSStructField {
 impl CSStructField {
     pub fn from_named_rust_field(rust_field: &syn::Field) -> Self {
         CSStructField {
-            name: rust_field.ident.as_ref().unwrap().to_string(),
+            name: munge_cs_name(rust_field.ident.as_ref().unwrap().to_string()),
             ty: CSType::from_rust_type(&rust_field.ty)
         }
     }
@@ -126,8 +126,7 @@ impl Display for CSStruct {
           .collect();
         writeln!(f, "\n{}public {}({}) {{", INDENT, self.name, constructor_args.join(", "))?;
         for field in self.fields.iter() {
-            let name = munge_cs_name(&field.name);
-            writeln!(f, "{}{}this.{} = {};", INDENT, INDENT, name, name)?;
+            writeln!(f, "{}{}this.{} = {};", INDENT, INDENT, field.name, field.name)?;
         }
         writeln!(f, "{}}}", INDENT)?;
 
@@ -143,9 +142,8 @@ struct CSFuncArg {
 impl CSFuncArg {
     pub fn from_rust_arg_captured(rust_arg: &syn::ArgCaptured) -> Self {
         if let syn::Pat::Ident(pat_ident) = &rust_arg.pat {
-            let name = pat_ident.ident.to_string();
             CSFuncArg {
-                name,
+                name: munge_cs_name(pat_ident.ident.to_string()),
                 ty: CSType::from_rust_type(&rust_arg.ty)
             }
         } else {
@@ -321,9 +319,9 @@ fn resolve_type_def(ty: &CSType, type_defs: &HashMap<String, CSTypeDef>) -> Opti
     }
 }
 
-fn munge_cs_name<'a>(name: &'a str) -> &'a str {
-    match name {
-        "string" => "str",
+fn munge_cs_name(name: String) -> String {
+    match name.as_ref() {
+        "string" => String::from("str"),
         _ => name
     }
 }
@@ -340,5 +338,5 @@ fn to_cs_primitive<'a>(type_name: &'a str) -> &'a str {
 }
 
 fn to_cs_var_decl<T: AsRef<str>>(ty: &CSType, name: T) -> String {
-    format!("{} {}", ty, munge_cs_name(name.as_ref()))
+    format!("{} {}", ty, name.as_ref())
 }
