@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-struct PFTextMetrics {
+public struct PFTextMetrics {
     public float width;
 
     public PFTextMetrics(float width) {
@@ -15,7 +15,7 @@ struct PFTextMetrics {
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-struct PFColorF {
+public struct PFColorF {
     public float r;
     public float g;
     public float b;
@@ -31,7 +31,7 @@ struct PFColorF {
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-struct PFColorU {
+public struct PFColorU {
     public byte r;
     public byte g;
     public byte b;
@@ -47,7 +47,7 @@ struct PFColorU {
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-struct PFVector2F {
+public struct PFVector2F {
     public float x;
     public float y;
 
@@ -59,7 +59,7 @@ struct PFVector2F {
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-struct PFVector2I {
+public struct PFVector2I {
     public Int32 x;
     public Int32 y;
 
@@ -71,7 +71,7 @@ struct PFVector2I {
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-struct PFRectF {
+public struct PFRectF {
     public PFVector2F origin;
     public PFVector2F lower_right;
 
@@ -83,7 +83,7 @@ struct PFRectF {
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-struct PFRectI {
+public struct PFRectI {
     public PFVector2I origin;
     public PFVector2I lower_right;
 
@@ -95,7 +95,7 @@ struct PFRectI {
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-struct PFBuildOptions {
+public struct PFBuildOptions {
     public UInt32 placeholder;
 
     public PFBuildOptions(UInt32 placeholder) {
@@ -103,7 +103,7 @@ struct PFBuildOptions {
     }
 }
 
-class PF {
+public class PF {
     public const byte PF_LINE_CAP_BUTT = 0;
 
     public const byte PF_LINE_CAP_SQUARE = 1;

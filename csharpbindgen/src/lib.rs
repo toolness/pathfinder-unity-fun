@@ -9,6 +9,8 @@ pub mod ignores;
 
 use ignores::Ignores;
 
+const CS_ACCESS: &'static str = "public";
+
 const INDENT: &'static str = "    ";
 
 struct CSTypeDef {
@@ -141,16 +143,16 @@ impl Display for CSStruct {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         writeln!(f, "[Serializable]")?;
         writeln!(f, "[StructLayout(LayoutKind.Sequential)]")?;
-        writeln!(f, "struct {} {{", self.name)?;
+        writeln!(f, "{} struct {} {{", CS_ACCESS, self.name)?;
         for field in self.fields.iter() {
-            writeln!(f, "{}public {};", INDENT, field.to_string())?;
+            writeln!(f, "{}{} {};", INDENT, CS_ACCESS, field.to_string())?;
         }
 
         let constructor_args: Vec<String> = self.fields
           .iter()
           .map(|field| field.to_string())
           .collect();
-        writeln!(f, "\n{}public {}({}) {{", INDENT, self.name, constructor_args.join(", "))?;
+        writeln!(f, "\n{}{} {}({}) {{", INDENT, CS_ACCESS, self.name, constructor_args.join(", "))?;
         for field in self.fields.iter() {
             writeln!(f, "{}{}this.{} = {};", INDENT, INDENT, field.name, field.name)?;
         }
@@ -225,7 +227,7 @@ impl Display for CSFunc {
           .iter()
           .map(|arg| arg.to_string())
           .collect();
-        write!(f, "public static extern {} {}({});", return_ty, self.name, args.join(", "))
+        write!(f, "{} static extern {} {}({});", CS_ACCESS, return_ty, self.name, args.join(", "))
     }
 }
 
@@ -316,9 +318,9 @@ impl Display for CSFile {
         for st in self.structs.iter() {
             writeln!(f, "{}", st)?;
         }
-        writeln!(f, "class {} {{", self.class_name)?;
+        writeln!(f, "{} class {} {{", CS_ACCESS, self.class_name)?;
         for con in self.consts.iter() {
-            writeln!(f, "{}public const {} {} = {};\n", INDENT, con.ty, con.name, con.value)?;
+            writeln!(f, "{}{} const {} {} = {};\n", INDENT, CS_ACCESS, con.ty, con.name, con.value)?;
         }
         for func in self.funcs.iter() {
             writeln!(f, "{}[DllImport(\"{}\")]", INDENT, self.dll_name)?;
