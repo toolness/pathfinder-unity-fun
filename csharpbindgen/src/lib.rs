@@ -9,7 +9,7 @@ pub mod ignores;
 
 use ignores::Ignores;
 
-const CS_ACCESS: &'static str = "public";
+const CS_ACCESS: &'static str = "internal";
 
 const INDENT: &'static str = "    ";
 
