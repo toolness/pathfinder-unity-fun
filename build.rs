@@ -2,8 +2,28 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
+use csharpbindgen::ignores::Ignores;
+use csharpbindgen::create_csharp_bindings;
 
-fn path_from_cwd(parts: &[&'static str]) -> PathBuf {
+const PATHFINDER_UNITY_API_RS: [&'static str; 2] = ["src", "pathfinder_unity_api.rs"];
+
+type PathParts = [&'static str];
+
+fn read_file(path_parts: &PathParts) -> String {
+    let path = path_from_cwd(path_parts);
+
+    if !path.exists() {
+        panic!("Expected file to exist: {}", path.to_string_lossy());
+    }
+
+    if let Ok(code) = fs::read_to_string(&path) {
+        code
+    } else {
+        panic!("Unable to read {}!", path.to_string_lossy())
+    }
+}
+
+fn path_from_cwd(parts: &PathParts) -> PathBuf {
     let mut pathbuf = env::current_dir().unwrap();
     for part in parts.iter() {
         pathbuf.push(part);
@@ -21,27 +41,44 @@ fn has_content_changed(path: &PathBuf, new_content: &String) -> bool {
     true
 }
 
-pub fn main() {
-    let c_api_path = path_from_cwd(&["pathfinder", "c", "src", "lib.rs"]);
+fn write_if_changed(path_parts: &PathParts, content: &String) {
+    let path = path_from_cwd(&path_parts);
 
-    if !c_api_path.exists() {
-        panic!("Expected {} to exist!", c_api_path.to_string_lossy());
+    if has_content_changed(&path, &content) {
+        println!("Writing {}.", path_parts.join("/"));
+
+        fs::write(path, content).unwrap();
     }
+}
 
-    let mut content = fs::read_to_string(c_api_path)
-        .unwrap()
+fn build_pathfinder_rust_code() {
+    let mut content = read_file(&["pathfinder", "c", "src", "lib.rs"])
         .replace("extern \"C\"", "extern \"stdcall\"");
 
     content = String::from(
         "// This file has been auto-generated, please do not edit it.\n\n"
     ) + &content;
 
-    let plugin_parts = ["src", "pathfinder_unity_api.rs"];
-    let plugin_api_path = path_from_cwd(&plugin_parts);
+    write_if_changed(&PATHFINDER_UNITY_API_RS, &content);
+}
 
-    if has_content_changed(&plugin_api_path, &content) {
-        println!("Writing {}.", plugin_parts.join("/"));
+fn build_pathfinder_csharp_code() {
+    let code = read_file(&PATHFINDER_UNITY_API_RS);
+    let ignores = Ignores::from_static_array(&[
+        "PFGLFunctionLoader",
+        "PFCanvasFontContextCreateWithFonts",
+        "PFCanvasCreateScene",
+        "PFRendererOptions",
+        "PFScene*",
+        "PFGL*",
+        "PFMetal*"
+    ]);
+    let bindings_code = create_csharp_bindings("PF", "GfxPluginPathfinder", &code, &ignores);
 
-        fs::write(plugin_api_path, content).unwrap();
-    }
+    write_if_changed(&["unity-project", "Assets", "PF.cs"], &bindings_code);
+}
+
+pub fn main() {
+    build_pathfinder_rust_code();
+    build_pathfinder_csharp_code();
 }
