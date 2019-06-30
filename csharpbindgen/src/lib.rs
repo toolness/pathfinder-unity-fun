@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::borrow::Borrow;
 use syn::Item;
 use std::fmt::{Formatter, Display};
 use std::fmt;
@@ -68,6 +69,31 @@ impl Display for CSType {
             }
         } else {
             write!(f, "{}", name)
+        }
+    }
+}
+
+struct CSConst {
+    name: String,
+    ty: CSType,
+    value: String,
+}
+
+impl CSConst {
+    pub fn from_rust_const(rust_const: &syn::ItemConst) -> Self {
+        let value = if let syn::Expr::Lit(expr_lit) = &rust_const.expr.borrow() {
+            if let syn::Lit::Int(lit_int) = &expr_lit.lit {
+                lit_int.value().to_string()
+            } else {
+                panic!("Unsupported const expression literal value: {:?}", expr_lit)
+            }
+        } else {
+            panic!("Unsupported const expression value: {:?}", rust_const.expr)
+        };
+        CSConst {
+            name: munge_cs_name(rust_const.ident.to_string()),
+            ty: CSType::from_rust_type(&rust_const.ty),
+            value
         }
     }
 }
@@ -206,6 +232,7 @@ impl Display for CSFunc {
 struct CSFile {
     class_name: String,
     dll_name: String,
+    consts: Vec<CSConst>,
     structs: Vec<Rc<CSStruct>>,
     funcs: Vec<CSFunc>,
     type_defs: HashMap<String, CSTypeDef>
@@ -216,6 +243,7 @@ impl CSFile {
         CSFile {
             class_name: String::from(class_name.as_ref()),
             dll_name: String::from(dll_name.as_ref()),
+            consts: vec![],
             structs: vec![],
             funcs: vec![],
             type_defs: HashMap::new()
@@ -225,6 +253,11 @@ impl CSFile {
     pub fn populate_from_rust_file(&mut self, rust_file: &syn::File, ignores: &Ignores) {
         for item in rust_file.items.iter() {
             match item {
+                Item::Const(item_const) => {
+                    if !ignores.ignore(&item_const.ident) {
+                        self.consts.push(CSConst::from_rust_const(&item_const));
+                    }
+                },
                 Item::Struct(item_struct) => {
                     if !ignores.ignore(&item_struct.ident) {
                         let s = Rc::new(CSStruct::from_rust_struct(&item_struct));
@@ -284,6 +317,9 @@ impl Display for CSFile {
             writeln!(f, "{}", st)?;
         }
         writeln!(f, "class {} {{", self.class_name)?;
+        for con in self.consts.iter() {
+            writeln!(f, "{}public const {} {} = {};\n", INDENT, con.ty, con.name, con.value)?;
+        }
         for func in self.funcs.iter() {
             writeln!(f, "{}[DllImport(\"{}\")]", INDENT, self.dll_name)?;
             writeln!(f, "{}{}\n", INDENT, func)?;
