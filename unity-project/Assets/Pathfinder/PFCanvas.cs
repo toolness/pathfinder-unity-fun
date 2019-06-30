@@ -5,7 +5,7 @@ public class PFCanvas {
     private IntPtr handle;
 
     public PFCanvas(PFCanvasFontContext fontContext, Vector2 size) {
-        var pfSize = PFUnity.PFVector2F(size);
+        var pfSize = PFUnityConv.PFVector2F(size);
         handle = PF.PFCanvasCreate(fontContext.PrepareToConsume(), ref pfSize);
     }
 
@@ -22,13 +22,13 @@ public class PFCanvas {
 
     public void StrokeRect(Rect rect) {
         EnsureHandleIsValid();
-        var pfRect = PFUnity.PFRectF(rect);
+        var pfRect = PFUnityConv.PFRectF(rect);
         PF.PFCanvasStrokeRect(handle, ref pfRect);
     }
 
     public void FillRect(Rect rect) {
         EnsureHandleIsValid();
-        var pfRect = PFUnity.PFRectF(rect);
+        var pfRect = PFUnityConv.PFRectF(rect);
         PF.PFCanvasFillRect(handle, ref pfRect);
     }
 
