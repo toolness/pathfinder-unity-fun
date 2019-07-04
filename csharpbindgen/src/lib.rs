@@ -4,7 +4,6 @@ use std::fmt::{Formatter, Display};
 use std::fmt;
 use std::rc::Rc;
 use syn::Item;
-use syn::spanned::Spanned;
 
 pub mod error;
 mod symbol_config;
@@ -84,7 +83,7 @@ impl CSType {
                 Ok(wrapped_type)
             },
             _ => {
-                unsupported(format!("the type {} is unsupported", span_to_str(&rust_type)))
+                unsupported(format!("the type is unsupported"))
             }
         }
     }
@@ -303,25 +302,31 @@ impl CSFile {
             match item {
                 Item::Const(item_const) => {
                     if let Some(cfg) = cfg_mgr.get(&item_const.ident) {
-                        self.consts.push(CSConst::from_rust_const(&item_const, cfg)?);
+                        let cs_const = error::add_ident(
+                            CSConst::from_rust_const(&item_const, cfg), &item_const.ident)?;
+                        self.consts.push(cs_const);
                     }
                 },
                 Item::Struct(item_struct) => {
                     if let Some(cfg) = cfg_mgr.get(&item_struct.ident) {
-                        let s = Rc::new(CSStruct::from_rust_struct(&item_struct, cfg)?);
-                        self.structs.push(s);
+                        let cs_struct = error::add_ident(
+                            CSStruct::from_rust_struct(&item_struct, cfg), &item_struct.ident)?;
+                        self.structs.push(Rc::new(cs_struct));
                     }
                 },
                 Item::Fn(item_fn) => {
                     if item_fn.abi.is_some() {
                         if let Some(cfg) = cfg_mgr.get(&item_fn.ident) {
-                            self.funcs.push(CSFunc::from_rust_fn(&item_fn, cfg)?);
+                            let cs_func = error::add_ident(
+                                CSFunc::from_rust_fn(&item_fn, cfg), &item_fn.ident)?;
+                            self.funcs.push(cs_func);
                         }
                     }
                 },
                 Item::Type(item_type) => {
                     if let Some(_cfg) = cfg_mgr.get(&item_type.ident) {
-                        let type_def = CSTypeDef::from_rust_type_def(&item_type)?;
+                        let type_def = error::add_ident(
+                            CSTypeDef::from_rust_type_def(&item_type), &item_type.ident)?;
                         self.type_defs.insert(type_def.name.clone(), type_def);
                     }
                 },
@@ -472,13 +477,7 @@ fn to_cs_var_decl<T: AsRef<str>>(ty: &CSType, name: T) -> String {
 }
 
 fn unsupported<T>(msg: String) -> Result<T> {
-    Err(Error::UnsupportedError(msg))
-}
-
-fn span_to_str<T: Spanned>(item: T) -> String {
-    let span = item.span();
-    let loc = span.start();
-    format!("starting at line {}, column {}", loc.line, loc.column)
+    Err(Error::UnsupportedError(msg, None))
 }
 
 #[cfg(test)]
@@ -493,6 +492,17 @@ mod tests {
           .unwrap_err();
         let err_msg = format!("{}", err);
         assert_eq!(err_msg, "Couldn't parse Rust code: expected `!`");
+    }
+
+    #[test]
+    fn test_it_errors_on_unsupported_rust_code() {
+        let err = Builder::new("Blarg", String::from(r#"
+            pub type MyFunkyThing = fn() -> void;
+        "#)).generate().unwrap_err();
+        assert_eq!(
+            format!("{}", err),
+            "Unable to export C# code while processing symbol \"MyFunkyThing\" because the type is unsupported"
+        );
     }
 
     #[test]
