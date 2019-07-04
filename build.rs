@@ -2,9 +2,6 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-use csharpbindgen::ignores::Ignores;
-use csharpbindgen::create_csharp_bindings;
-
 const PATHFINDER_UNITY_API_RS: [&'static str; 2] = ["src", "pathfinder_unity_api.rs"];
 
 type PathParts = [&'static str];
@@ -64,16 +61,18 @@ fn build_pathfinder_rust_code() {
 
 fn build_pathfinder_csharp_code() {
     let code = read_file(&PATHFINDER_UNITY_API_RS);
-    let ignores = Ignores::from_static_array(&[
-        "PFGLFunctionLoader",
-        "PFCanvasFontContextCreateWithFonts",
-        "PFCanvasCreateScene",
-        "PFRendererOptions",
-        "PFScene*",
-        "PFGL*",
-        "PFMetal*"
-    ]);
-    let bindings_code = create_csharp_bindings("PF", "GfxPluginPathfinder", &code, &ignores);
+    let bindings_code = csharpbindgen::Builder::new("GfxPluginPathfinder", code)
+        .class_name("PF")
+        .ignores(&[
+            "PFGLFunctionLoader",
+            "PFCanvasFontContextCreateWithFonts",
+            "PFCanvasCreateScene",
+            "PFRendererOptions",
+            "PFScene*",
+            "PFGL*",
+            "PFMetal*"
+        ])
+        .generate();
 
     write_if_changed(&["unity-project", "Assets", "Pathfinder", "PF.cs"], &bindings_code);
 }

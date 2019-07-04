@@ -241,10 +241,10 @@ struct CSFile {
 }
 
 impl CSFile {
-    pub fn new<T: AsRef<str>>(class_name: T, dll_name: T) -> Self {
+    pub fn new(class_name: String, dll_name: String) -> Self {
         CSFile {
-            class_name: String::from(class_name.as_ref()),
-            dll_name: String::from(dll_name.as_ref()),
+            class_name,
+            dll_name,
             consts: vec![],
             structs: vec![],
             funcs: vec![],
@@ -330,17 +330,46 @@ impl Display for CSFile {
     }
 }
 
-pub fn create_csharp_bindings<T: AsRef<str>>(
-    class_name: T,
-    dll_name: T,
-    rust_code: &String,
-    ignores: &Ignores
-) -> String {
-    let syntax = syn::parse_file(&rust_code).expect("unable to parse rust source file");
-    let mut program = CSFile::new(class_name, dll_name);
-    program.populate_from_rust_file(&syntax, ignores);
-    program.resolve_types();
-    format!("{}", program)
+pub struct Builder {
+    class_name: String,
+    dll_name: String,
+    rust_code: String,
+    ignores: Ignores
+}
+
+impl Builder {
+    pub fn new<T: AsRef<str>>(
+        dll_name: T,
+        rust_code: String
+    ) -> Self {
+        Builder {
+            class_name: String::from("RustExports"),
+            dll_name: String::from(dll_name.as_ref()),
+            rust_code,
+            ignores: Ignores::new()
+        }
+    }
+
+    pub fn class_name<T: AsRef<str>>(mut self, class_name: T) -> Self {
+        self.class_name = String::from(class_name.as_ref());
+        self
+    }
+
+    pub fn ignores(mut self, ignores: &[&str]) -> Self {
+        self.ignores = Ignores::from_static_array(ignores);
+        self
+    }
+
+    pub fn generate(self) -> String {
+        let syntax = syn::parse_file(&self.rust_code).expect("unable to parse rust source file");
+        let mut program = CSFile::new(
+            self.class_name,
+            self.dll_name
+        );
+        program.populate_from_rust_file(&syntax, &self.ignores);
+        program.resolve_types();
+        format!("{}", program)
+    }
 }
 
 fn resolve_type_def(ty: &CSType, type_defs: &HashMap<String, CSTypeDef>) -> Option<CSType> {
@@ -412,12 +441,10 @@ mod tests {
             pub unsafe extern "C" fn ignore_this_func(a: i32) -> u8 { 120 }
         "#;
 
-        let code = create_csharp_bindings(
-            "MyStuff",
-            "MyDll",
-            &String::from(rust_code),
-            &Ignores::from_static_array(&["ignore_*", "IGNORE_*", "Ignore*"])
-        );
+        let code = Builder::new("MyDll", String::from(rust_code))
+          .class_name("MyStuff")
+          .ignores(&["ignore_*", "IGNORE_*", "Ignore*"])
+          .generate();
 
         assert_snapshot_matches!("main_example", code);
     }
