@@ -1,5 +1,5 @@
 ---
-created: "2019-06-30T21:50:06.510808900Z"
+created: "2019-07-04T19:55:41.254654100Z"
 creator: insta@0.8.1
 source: src/lib.rs
 expression: code
@@ -21,8 +21,21 @@ internal struct MyStruct {
     }
 }
 
+[Serializable]
+[StructLayout(LayoutKind.Sequential)]
+public struct PublicStruct {
+    public Int32 bop;
+
+    public PublicStruct(Int32 bop) {
+        this.bop = bop;
+    }
+}
+
 internal class MyStuff {
     internal const byte BOOP = 1;
+
+    [DllImport("MyDll")]
+    public static extern void public_func();
 
     [DllImport("MyDll")]
     internal static extern byte blarg(Int32 a, ref MyStruct b, IntPtr /* MyOpaqueStruct */ c);

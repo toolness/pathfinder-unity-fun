@@ -5,13 +5,37 @@ use std::fmt::{Formatter, Display};
 use std::fmt;
 use std::rc::Rc;
 
-pub mod ignores;
+mod symbol_config;
+mod ignores;
 
-use ignores::Ignores;
-
-const CS_ACCESS: &'static str = "internal";
+use symbol_config::{SymbolConfigManager, SymbolConfig};
 
 const INDENT: &'static str = "    ";
+
+#[derive(Clone, Copy)]
+pub enum CSAccess {
+    Private,
+    Protected,
+    Internal,
+    Public
+}
+
+impl Display for CSAccess {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", match self {
+            CSAccess::Private => "private",
+            CSAccess::Protected => "protected",
+            CSAccess::Internal => "internal",
+            CSAccess::Public => "public"
+        })
+    }
+}
+
+impl Default for CSAccess {
+    fn default() -> Self {
+        CSAccess::Internal
+    }
+}
 
 struct CSTypeDef {
     name: String,
@@ -79,10 +103,11 @@ struct CSConst {
     name: String,
     ty: CSType,
     value: String,
+    cfg: SymbolConfig
 }
 
 impl CSConst {
-    pub fn from_rust_const(rust_const: &syn::ItemConst) -> Self {
+    pub fn from_rust_const(rust_const: &syn::ItemConst, cfg: SymbolConfig) -> Self {
         let value = if let syn::Expr::Lit(expr_lit) = &rust_const.expr.borrow() {
             if let syn::Lit::Int(lit_int) = &expr_lit.lit {
                 lit_int.value().to_string()
@@ -95,7 +120,8 @@ impl CSConst {
         CSConst {
             name: munge_cs_name(rust_const.ident.to_string()),
             ty: CSType::from_rust_type(&rust_const.ty),
-            value
+            value,
+            cfg
         }
     }
 }
@@ -120,11 +146,12 @@ impl CSStructField {
 
 struct CSStruct {
     name: String,
-    fields: Vec<CSStructField>
+    fields: Vec<CSStructField>,
+    cfg: SymbolConfig
 }
 
 impl CSStruct {
-    pub fn from_rust_struct(rust_struct: &syn::ItemStruct) -> Self {
+    pub fn from_rust_struct(rust_struct: &syn::ItemStruct, cfg: SymbolConfig) -> Self {
         let mut fields = vec![];
 
         if let syn::Fields::Named(rust_fields) = &rust_struct.fields {
@@ -134,7 +161,8 @@ impl CSStruct {
         }
         CSStruct {
             name: rust_struct.ident.to_string(),
-            fields
+            fields,
+            cfg
         }
     }
 }
@@ -143,16 +171,16 @@ impl Display for CSStruct {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         writeln!(f, "[Serializable]")?;
         writeln!(f, "[StructLayout(LayoutKind.Sequential)]")?;
-        writeln!(f, "{} struct {} {{", CS_ACCESS, self.name)?;
+        writeln!(f, "{} struct {} {{", self.cfg.access, self.name)?;
         for field in self.fields.iter() {
-            writeln!(f, "{}{} {};", INDENT, CS_ACCESS, field.to_string())?;
+            writeln!(f, "{}{} {};", INDENT, self.cfg.access, field.to_string())?;
         }
 
         let constructor_args: Vec<String> = self.fields
           .iter()
           .map(|field| field.to_string())
           .collect();
-        writeln!(f, "\n{}{} {}({}) {{", INDENT, CS_ACCESS, self.name, constructor_args.join(", "))?;
+        writeln!(f, "\n{}{} {}({}) {{", INDENT, self.cfg.access, self.name, constructor_args.join(", "))?;
         for field in self.fields.iter() {
             writeln!(f, "{}{}this.{} = {};", INDENT, INDENT, field.name, field.name)?;
         }
@@ -187,11 +215,12 @@ impl CSFuncArg {
 struct CSFunc {
     name: String,
     args: Vec<CSFuncArg>,
-    return_ty: Option<CSType>
+    return_ty: Option<CSType>,
+    cfg: SymbolConfig
 }
 
 impl CSFunc {
-    pub fn from_rust_fn(rust_fn: &syn::ItemFn) -> Self {
+    pub fn from_rust_fn(rust_fn: &syn::ItemFn, cfg: SymbolConfig) -> Self {
         let mut args = vec![];
 
         for input in rust_fn.decl.inputs.iter() {
@@ -212,7 +241,8 @@ impl CSFunc {
         CSFunc {
             name: rust_fn.ident.to_string(),
             args,
-            return_ty
+            return_ty,
+            cfg
         }
     }
 }
@@ -227,7 +257,7 @@ impl Display for CSFunc {
           .iter()
           .map(|arg| arg.to_string())
           .collect();
-        write!(f, "{} static extern {} {}({});", CS_ACCESS, return_ty, self.name, args.join(", "))
+        write!(f, "{} static extern {} {}({});", self.cfg.access, return_ty, self.name, args.join(", "))
     }
 }
 
@@ -252,29 +282,29 @@ impl CSFile {
         }
     }
 
-    pub fn populate_from_rust_file(&mut self, rust_file: &syn::File, ignores: &Ignores) {
+    pub fn populate_from_rust_file(&mut self, rust_file: &syn::File, cfg_mgr: &SymbolConfigManager) {
         for item in rust_file.items.iter() {
             match item {
                 Item::Const(item_const) => {
-                    if !ignores.ignore(&item_const.ident) {
-                        self.consts.push(CSConst::from_rust_const(&item_const));
+                    if let Some(cfg) = cfg_mgr.get(&item_const.ident) {
+                        self.consts.push(CSConst::from_rust_const(&item_const, cfg));
                     }
                 },
                 Item::Struct(item_struct) => {
-                    if !ignores.ignore(&item_struct.ident) {
-                        let s = Rc::new(CSStruct::from_rust_struct(&item_struct));
+                    if let Some(cfg) = cfg_mgr.get(&item_struct.ident) {
+                        let s = Rc::new(CSStruct::from_rust_struct(&item_struct, cfg));
                         self.structs.push(s);
                     }
                 },
                 Item::Fn(item_fn) => {
                     if item_fn.abi.is_some() {
-                        if !ignores.ignore(&item_fn.ident) {
-                            self.funcs.push(CSFunc::from_rust_fn(&item_fn));
+                        if let Some(cfg) = cfg_mgr.get(&item_fn.ident) {
+                            self.funcs.push(CSFunc::from_rust_fn(&item_fn, cfg));
                         }
                     }
                 },
                 Item::Type(item_type) => {
-                    if !ignores.ignore(&item_type.ident) {
+                    if let Some(_cfg) = cfg_mgr.get(&item_type.ident) {
                         let type_def = CSTypeDef::from_rust_type_def(&item_type);
                         self.type_defs.insert(type_def.name.clone(), type_def);
                     }
@@ -318,9 +348,9 @@ impl Display for CSFile {
         for st in self.structs.iter() {
             writeln!(f, "{}", st)?;
         }
-        writeln!(f, "{} class {} {{", CS_ACCESS, self.class_name)?;
+        writeln!(f, "{} class {} {{", CSAccess::default(), self.class_name)?;
         for con in self.consts.iter() {
-            writeln!(f, "{}{} const {} {} = {};\n", INDENT, CS_ACCESS, con.ty, con.name, con.value)?;
+            writeln!(f, "{}{} const {} {} = {};\n", INDENT, con.cfg.access, con.ty, con.name, con.value)?;
         }
         for func in self.funcs.iter() {
             writeln!(f, "{}[DllImport(\"{}\")]", INDENT, self.dll_name)?;
@@ -334,7 +364,7 @@ pub struct Builder {
     class_name: String,
     dll_name: String,
     rust_code: String,
-    ignores: Ignores
+    sconfig: SymbolConfigManager
 }
 
 impl Builder {
@@ -346,7 +376,7 @@ impl Builder {
             class_name: String::from("RustExports"),
             dll_name: String::from(dll_name.as_ref()),
             rust_code,
-            ignores: Ignores::new()
+            sconfig: SymbolConfigManager::new()
         }
     }
 
@@ -356,7 +386,14 @@ impl Builder {
     }
 
     pub fn ignores(mut self, ignores: &[&str]) -> Self {
-        self.ignores = Ignores::from_static_array(ignores);
+        self.sconfig.ignores.add_static_array(ignores);
+        self
+    }
+
+    pub fn access<T: AsRef<str>>(mut self, symbol_name: T, access: CSAccess) -> Self {
+        self.sconfig.config_map.insert(String::from(symbol_name.as_ref()), SymbolConfig {
+            access
+        });
         self
     }
 
@@ -366,7 +403,7 @@ impl Builder {
             self.class_name,
             self.dll_name
         );
-        program.populate_from_rust_file(&syntax, &self.ignores);
+        program.populate_from_rust_file(&syntax, &self.sconfig);
         program.resolve_types();
         format!("{}", program)
     }
@@ -430,6 +467,13 @@ mod tests {
 
             pub type MyOpaqueRef = *mut MyOpaqueStruct;
 
+            pub unsafe extern "C" fn public_func() {}
+
+            #[repr(C)]
+            pub struct PublicStruct {
+                pub bop: i32,
+            }
+
             fn unexported_func() {}
 
             pub unsafe extern "C" fn blarg(
@@ -444,6 +488,8 @@ mod tests {
         let code = Builder::new("MyDll", String::from(rust_code))
           .class_name("MyStuff")
           .ignores(&["ignore_*", "IGNORE_*", "Ignore*"])
+          .access("public_func", CSAccess::Public)
+          .access("PublicStruct", CSAccess::Public)
           .generate();
 
         assert_snapshot_matches!("main_example", code);
