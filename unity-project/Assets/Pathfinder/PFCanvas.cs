@@ -15,6 +15,14 @@ public class PFCanvas {
         }
     }
 
+    public void SetFillStyle(PFFillStyle style) {
+        PF.PFCanvasSetFillStyle(handle, style.handle);
+    }
+
+    public void SetStrokeStyle(PFFillStyle style) {
+        PF.PFCanvasSetStrokeStyle(handle, style.handle);
+    }
+
     public void SetLineWidth(float width) {
         EnsureHandleIsValid();
         PF.PFCanvasSetLineWidth(handle, width);

@@ -14,4 +14,8 @@ internal class PFUnityConv {
     internal static PFVector2F PFVector2F(Vector2 v) {
         return new PFVector2F(v.x, v.y);
     }
+
+    internal static PFColorU PFColorU(Color32 c) {
+        return new PFColorU(c.r, c.g, c.b, c.a);
+    }
 }
