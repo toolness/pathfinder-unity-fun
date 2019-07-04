@@ -1,6 +1,12 @@
 using System;
 using UnityEngine;
 
+public enum PFLineJoin {
+    Miter = PF.PF_LINE_JOIN_MITER,
+    Bevel = PF.PF_LINE_JOIN_BEVEL,
+    Round = PF.PF_LINE_JOIN_ROUND
+}
+
 public class PFCanvas {
     private IntPtr handle;
 
@@ -13,6 +19,10 @@ public class PFCanvas {
         if (handle == IntPtr.Zero) {
             throw new Exception("Canvas has already been consumed!");
         }
+    }
+
+    public void SetLineJoin(PFLineJoin join) {
+        PF.PFCanvasSetLineJoin(handle, (byte) join);
     }
 
     public void SetFillStyle(PFFillStyle style) {

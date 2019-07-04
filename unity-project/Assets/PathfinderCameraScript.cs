@@ -18,6 +18,7 @@ public class PathfinderCameraScript : MonoBehaviour
 
         canvas.SetStrokeStyle(Color.blue);
         canvas.SetFillStyle(Color.green);
+        canvas.SetLineJoin(PFLineJoin.Round);
         canvas.SetLineWidth(10.0f);
 
         // Draw walls.
