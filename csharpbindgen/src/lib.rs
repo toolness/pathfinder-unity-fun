@@ -385,7 +385,7 @@ impl Builder {
         self
     }
 
-    pub fn ignores(mut self, ignores: &[&str]) -> Self {
+    pub fn ignore(mut self, ignores: &[&str]) -> Self {
         self.sconfig.ignores.add_static_array(ignores);
         self
     }
@@ -487,7 +487,7 @@ mod tests {
 
         let code = Builder::new("MyDll", String::from(rust_code))
           .class_name("MyStuff")
-          .ignores(&["ignore_*", "IGNORE_*", "Ignore*"])
+          .ignore(&["ignore_*", "IGNORE_*", "Ignore*"])
           .access("public_func", CSAccess::Public)
           .access("PublicStruct", CSAccess::Public)
           .generate();

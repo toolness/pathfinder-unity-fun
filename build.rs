@@ -63,7 +63,7 @@ fn build_pathfinder_csharp_code() {
     let code = read_file(&PATHFINDER_UNITY_API_RS);
     let bindings_code = csharpbindgen::Builder::new("GfxPluginPathfinder", code)
         .class_name("PF")
-        .ignores(&[
+        .ignore(&[
             "PFGLFunctionLoader",
             "PFCanvasFontContextCreateWithFonts",
             "PFCanvasCreateScene",
