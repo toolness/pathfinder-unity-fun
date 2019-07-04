@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public enum PFLineJoin {
+public enum PFLineJoin : byte {
     Miter = PF.PF_LINE_JOIN_MITER,
     Bevel = PF.PF_LINE_JOIN_BEVEL,
     Round = PF.PF_LINE_JOIN_ROUND
