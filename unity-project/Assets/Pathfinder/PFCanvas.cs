@@ -34,6 +34,28 @@ public class PFCanvas {
         PF.PFCanvasStrokeRect(handle, ref pfRect);
     }
 
+    public void FillText(PFString str, Vector2 position) {
+        var pfVector = PFUnityConv.PFVector2F(position);
+        PF.PFCanvasFillText(handle, str.handle, str.len, ref pfVector);
+    }
+
+    public void FillText(string str, Vector2 position) {
+        FillText(new PFString(str), position);
+    }
+
+    public void StrokeText(PFString str, Vector2 position) {
+        var pfVector = PFUnityConv.PFVector2F(position);
+        PF.PFCanvasStrokeText(handle, str.handle, str.len, ref pfVector);
+    }
+
+    public void StrokeText(string str, Vector2 position) {
+        StrokeText(new PFString(str), position);
+    }
+
+    public void SetFontSize(float size) {
+        PF.PFCanvasSetFontSize(handle, size);
+    }
+
     public void FillRect(Rect rect) {
         EnsureHandleIsValid();
         var pfRect = PFUnityConv.PFRectF(rect);

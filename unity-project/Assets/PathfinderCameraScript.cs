@@ -34,6 +34,10 @@ public class PathfinderCameraScript : MonoBehaviour
         path.ClosePath();
         canvas.StrokePath(path);
 
+        canvas.SetFillStyle(PFFillStyle.CreateColor(Color.black));
+        canvas.SetFontSize(24.0f);
+        canvas.FillText("Hello world\u2026", new Vector2(10.0f, 40.0f));
+
         canvas.QueueForRendering();
 
         // This is temporary code just to make sure calls don't crash.
