@@ -21,6 +21,10 @@ public class PFString {
         get { return (UIntPtr) encodedBytes.Length; }
     }
 
+    public static implicit operator PFString(string s) {
+        return new PFString(s);
+    }
+
     ~PFString() {
         Marshal.FreeHGlobal(handle);
     }
