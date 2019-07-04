@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::borrow::Borrow;
-use syn::Item;
 use std::fmt::{Formatter, Display};
 use std::fmt;
 use std::rc::Rc;
+use syn::Item;
+use syn::spanned::Spanned;
 
 pub mod error;
 mod symbol_config;
@@ -82,7 +83,9 @@ impl CSType {
                 wrapped_type.is_ptr = true;
                 Ok(wrapped_type)
             },
-            _ => { unsupported(format!("type is unsupported: {:?}", rust_type)) }
+            _ => {
+                unsupported(format!("the type {} is unsupported", span_to_str(&rust_type)))
+            }
         }
     }
 }
@@ -470,6 +473,12 @@ fn to_cs_var_decl<T: AsRef<str>>(ty: &CSType, name: T) -> String {
 
 fn unsupported<T>(msg: String) -> Result<T> {
     Err(Error::UnsupportedError(msg))
+}
+
+fn span_to_str<T: Spanned>(item: T) -> String {
+    let span = item.span();
+    let loc = span.start();
+    format!("starting at line {}, column {}", loc.line, loc.column)
 }
 
 #[cfg(test)]

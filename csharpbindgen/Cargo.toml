@@ -10,3 +10,7 @@ insta = "0.8.1"
 [dependencies.syn]
 version = "0.15"
 features = ["full", "extra-traits"]
+
+[dependencies.proc-macro2]
+version = "0.4.30"
+features = ["span-locations"]

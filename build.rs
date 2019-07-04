@@ -61,8 +61,9 @@ fn build_pathfinder_rust_code() {
 }
 
 fn build_pathfinder_csharp_code() {
-    let code = read_file(&PATHFINDER_UNITY_API_RS);
-    let bindings_code = csharpbindgen::Builder::new("GfxPluginPathfinder", code)
+    let srcfile = PATHFINDER_UNITY_API_RS;
+    let code = read_file(&srcfile);
+    let bindings_result = csharpbindgen::Builder::new("GfxPluginPathfinder", code)
         .class_name("PF")
         .ignore(&[
             "PFGLFunctionLoader",
@@ -74,10 +75,21 @@ fn build_pathfinder_csharp_code() {
             "PFMetal*"
         ])
         .access("PFTextMetrics", CSAccess::Public)
-        .generate()
-        .unwrap();
+        .generate();
 
-    write_if_changed(&["unity-project", "Assets", "Pathfinder", "PF.cs"], &bindings_code);
+    match bindings_result {
+        Err(err) => {
+            println!(
+                "Unable to generate Pathfinder C# code from {}.\n{}.",
+                srcfile.join("/"),
+                err
+            );
+            std::process::exit(1);
+        },
+        Ok(bindings_code) => {
+            write_if_changed(&["unity-project", "Assets", "Pathfinder", "PF.cs"], &bindings_code);
+        }
+    }
 }
 
 pub fn main() {
