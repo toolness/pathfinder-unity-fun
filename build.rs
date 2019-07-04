@@ -74,7 +74,8 @@ fn build_pathfinder_csharp_code() {
             "PFMetal*"
         ])
         .access("PFTextMetrics", CSAccess::Public)
-        .generate();
+        .generate()
+        .unwrap();
 
     write_if_changed(&["unity-project", "Assets", "Pathfinder", "PF.cs"], &bindings_code);
 }
