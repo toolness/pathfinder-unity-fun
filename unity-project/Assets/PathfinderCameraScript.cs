@@ -16,8 +16,8 @@ public class PathfinderCameraScript : MonoBehaviour
         // Make a canvas. We're going to draw a house.
         var canvas = new PFCanvas(fontContext, new Vector2(Screen.width, Screen.height));
 
-        canvas.SetStrokeStyle(PFFillStyle.CreateColor(Color.blue));
-        canvas.SetFillStyle(PFFillStyle.CreateColor(Color.green));
+        canvas.SetStrokeStyle(Color.blue);
+        canvas.SetFillStyle(Color.green);
         canvas.SetLineWidth(10.0f);
 
         // Draw walls.
@@ -34,7 +34,7 @@ public class PathfinderCameraScript : MonoBehaviour
         path.ClosePath();
         canvas.StrokePath(path);
 
-        canvas.SetFillStyle(PFFillStyle.CreateColor(Color.black));
+        canvas.SetFillStyle(Color.black);
         canvas.SetFontSize(24.0f);
         canvas.FillText("Hello world\u2026", new Vector2(10.0f, 40.0f));
 

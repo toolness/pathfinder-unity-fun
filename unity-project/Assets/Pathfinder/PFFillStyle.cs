@@ -13,6 +13,14 @@ public class PFFillStyle {
         return new PFFillStyle(PF.PFFillStyleCreateColor(ref color));
     }
 
+    public static implicit operator PFFillStyle(Color32 c) {
+        return PFFillStyle.CreateColor(c);
+    }
+
+    public static implicit operator PFFillStyle(Color c) {
+        return PFFillStyle.CreateColor(c);
+    }
+
     ~PFFillStyle() {
         PF.PFFillStyleDestroy(handle);
     }
