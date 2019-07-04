@@ -5,10 +5,10 @@ using System.Runtime.InteropServices;
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-internal struct PFTextMetrics {
-    internal float width;
+public struct PFTextMetrics {
+    public float width;
 
-    internal PFTextMetrics(float width) {
+    public PFTextMetrics(float width) {
         this.width = width;
     }
 }

@@ -1,6 +1,7 @@
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+use csharpbindgen::CSAccess;
 
 const PATHFINDER_UNITY_API_RS: [&'static str; 2] = ["src", "pathfinder_unity_api.rs"];
 
@@ -72,6 +73,7 @@ fn build_pathfinder_csharp_code() {
             "PFGL*",
             "PFMetal*"
         ])
+        .access("PFTextMetrics", CSAccess::Public)
         .generate();
 
     write_if_changed(&["unity-project", "Assets", "Pathfinder", "PF.cs"], &bindings_code);
