@@ -7,6 +7,7 @@ extern crate log;
 use std::env;
 use std::path::PathBuf;
 use std::sync::Mutex;
+use std::collections::HashMap;
 use libc::c_int;
 
 mod unity_interfaces;
@@ -30,7 +31,7 @@ use render::Renderer;
 struct PluginState {
     unity_interfaces: *const IUnityInterfaces,
     unity_renderer: Option<UnityGfxRenderer>,
-    canvas: Mutex<Option<Box<CanvasRenderingContext2D>>>,
+    canvases: Mutex<HashMap<i32, Box<CanvasRenderingContext2D>>>,
     renderer: Option<Renderer>,
     errored: bool
 }
@@ -40,7 +41,7 @@ impl PluginState {
         let mut plugin = PluginState {
             unity_interfaces,
             unity_renderer: None,
-            canvas: Mutex::new(None),
+            canvases: Mutex::new(HashMap::new()),
             renderer: None,
             errored: false
         };
@@ -124,12 +125,11 @@ impl PluginState {
         }
     }
 
-    pub fn set_canvas(&mut self, canvas: Box<CanvasRenderingContext2D>) {
-        let mut locked_canvas = self.canvas.lock().unwrap();
-        *locked_canvas = Some(canvas);
+    pub fn set_canvas(&mut self, id: i32, canvas: Box<CanvasRenderingContext2D>) {
+        self.canvases.lock().unwrap().insert(id, canvas);
     }
 
-    pub fn render(&mut self) {
+    pub fn render(&mut self, canvas_id: i32) {
         if self.errored {
             return;
         }
@@ -138,7 +138,7 @@ impl PluginState {
                 self.try_to_init_renderer();
             }
             if let Some(renderer) = &mut self.renderer {
-                if let Some(canvas) = self.canvas.lock().unwrap().take() {
+                if let Some(canvas) = self.canvases.lock().unwrap().remove(&canvas_id) {
                     renderer.render(canvas);
                 }
             }
@@ -195,16 +195,16 @@ fn get_plugin_state_mut() -> &'static mut PluginState {
     }
 }
 
-extern "stdcall" fn handle_render_event(_event_id: c_int) {
-    get_plugin_state_mut().render();
+extern "stdcall" fn handle_render_canvas(canvas_id: c_int) {
+    get_plugin_state_mut().render(canvas_id);
 }
 
 #[no_mangle]
-pub extern "stdcall" fn get_render_event_func() -> UnityRenderingEvent {
-    handle_render_event
+pub extern "stdcall" fn get_render_canvas_func() -> UnityRenderingEvent {
+    handle_render_canvas
 }
 
 #[no_mangle]
-pub extern "stdcall" fn queue_canvas_for_rendering(canvas: PFCanvasRef) {
-    get_plugin_state_mut().set_canvas(unsafe { Box::from_raw(canvas) });
+pub extern "stdcall" fn queue_canvas_for_rendering(canvas: PFCanvasRef, id: c_int) {
+    get_plugin_state_mut().set_canvas(id, unsafe { Box::from_raw(canvas) });
 }

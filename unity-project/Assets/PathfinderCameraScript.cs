@@ -39,7 +39,7 @@ public class PathfinderCameraScript : MonoBehaviour
         canvas.SetFontSize(24.0f);
         canvas.FillText("Hello world\u2026", new Vector2(10.0f, 40.0f));
 
-        canvas.QueueForRendering();
+        canvas.QueueForRendering(1);
 
         // This is temporary code just to make sure calls don't crash.
         path.Clone();

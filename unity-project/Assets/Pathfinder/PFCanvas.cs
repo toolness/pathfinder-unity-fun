@@ -76,10 +76,10 @@ public class PFCanvas {
         PF.PFCanvasFillPath(handle, pathHandleToConsume);
     }
 
-    public void QueueForRendering() {
-        PFPluginExports.queue_canvas_for_rendering(handle);
+    public void QueueForRendering(Int32 id) {
+        PFPluginExports.queue_canvas_for_rendering(handle, id);
         handle = IntPtr.Zero;
-        GL.IssuePluginEvent(PFPluginExports.get_render_event_func(), 1);
+        GL.IssuePluginEvent(PFPluginExports.get_render_canvas_func(), id);
     }
 
     ~PFCanvas() {
