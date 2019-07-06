@@ -4,6 +4,7 @@ use winapi::um::wingdi::{wglGetProcAddress, wglGetCurrentContext};
 use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress};
 use winapi::shared::windef::HGLRC;
 use winapi::shared::ntdef::NULL;
+use winapi::um::processthreadsapi::GetCurrentThreadId;
 use gl::types::*;
 
 const OPENGL32_DLL: &'static [u8] = b"opengl32.dll\0";
@@ -21,7 +22,8 @@ impl ContextWatcher {
     pub fn changed(&mut self) -> bool {
         let ctx = get_current_context();
         if ctx != self.current_context {
-            info!("OpenGL context changed from {:?} to {:?}.", self.current_context, ctx);
+            info!("OpenGL context changed from {:?} to {:?} on thread {}.",
+                  self.current_context, ctx, unsafe { GetCurrentThreadId() });
             self.current_context = ctx;
             init();
             true
