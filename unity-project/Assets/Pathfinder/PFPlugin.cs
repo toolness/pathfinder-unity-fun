@@ -2,6 +2,6 @@ using UnityEngine;
 
 public class PFPlugin {
     public static void ReleaseResources() {
-        GL.IssuePluginEvent(PFPluginExports.get_render_canvas_func(), 0);
+        GL.IssuePluginEvent(PFPluginExports.get_shutdown_func(), 0);
     }
 }

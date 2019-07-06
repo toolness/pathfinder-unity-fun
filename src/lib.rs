@@ -28,6 +28,11 @@ use unity_interfaces::{
 };
 use render::Renderer;
 
+enum PluginCommand {
+    Shutdown,
+    RenderCanvas(i32)
+}
+
 struct PluginState {
     unity_interfaces: *const IUnityInterfaces,
     unity_renderer: Option<UnityGfxRenderer>,
@@ -124,40 +129,50 @@ impl PluginState {
         self.canvases.lock().unwrap().insert(id, canvas);
     }
 
-    pub fn render(&mut self, canvas_id: i32) {
+    fn execute_opengl_command(&mut self, cmd: PluginCommand) {
+        let context_watcher = self.gl_context_watcher.as_mut()
+            .expect("GL context watcher should exist!");
+        let ctx = context_watcher.check();
+        match cmd {
+            PluginCommand::Shutdown => {
+                let renderer = self.renderers.remove(&ctx);
+                if renderer.is_some() {
+                    info!("Shutting down renderer for GL context {:?}!", ctx);
+                    drop(renderer);
+                }
+            },
+            PluginCommand::RenderCanvas(canvas_id) => {
+                let resources_dir = &self.resources_dir;
+                let renderer = self.renderers.entry(ctx)
+                    .or_insert_with(|| {
+                        info!("Creating a renderer for GL context {:?}.", ctx);
+                        Renderer::new(resources_dir)
+                    });
+                if let Some(canvas) = self.canvases.lock().unwrap().remove(&canvas_id) {
+                    renderer.render(canvas);
+                } else {
+                    info!("RenderCanvas called with nonexistent canvas id {}.", canvas_id);
+                    self.errored = true;
+                }
+            }
+        }
+    }
+
+    pub fn execute_command(&mut self, cmd: PluginCommand) {
         if self.errored {
             return;
         }
-        if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
-            let context_watcher = self.gl_context_watcher.as_mut()
-              .expect("GL context watcher should exist!");
-            let ctx = context_watcher.check();
-            if canvas_id == 0 {
-                let renderer = self.renderers.remove(&ctx);
-                if renderer.is_some() {
-                    info!("Shutting down renderer for GL context {:?}.", ctx);
-                    drop(renderer);
-                }
-                return;
-            }
-            let resources_dir = &self.resources_dir;
-            let renderer = self.renderers.entry(ctx)
-              .or_insert_with(|| {
-                  info!("Creating a renderer for GL context {:?}.", ctx);
-                  Renderer::new(resources_dir)
-              });
-            if let Some(canvas) = self.canvases.lock().unwrap().remove(&canvas_id) {
-                renderer.render(canvas);
-            } else {
-                info!("render() called with nonexistent canvas id {}.", canvas_id);
+        match self.unity_renderer {
+            Some(UnityGfxRenderer::OpenGLCore) => {
+                self.execute_opengl_command(cmd);
+            },
+            _ => {
+                info!(
+                    "execute_command() called, but rendering backend {:?} is unsupported.",
+                    self.unity_renderer
+                );
                 self.errored = true;
             }
-        } else {
-            info!(
-                "render() called, but rendering backend {:?} is unsupported.",
-                self.unity_renderer
-            );
-            self.errored = true;
         }
     }
 }
@@ -205,13 +220,22 @@ fn get_plugin_state_mut() -> &'static mut PluginState {
     }
 }
 
+extern "stdcall" fn handle_shutdown(_event_id: c_int) {
+    get_plugin_state_mut().execute_command(PluginCommand::Shutdown);
+}
+
 extern "stdcall" fn handle_render_canvas(canvas_id: c_int) {
-    get_plugin_state_mut().render(canvas_id);
+    get_plugin_state_mut().execute_command(PluginCommand::RenderCanvas(canvas_id));
 }
 
 #[no_mangle]
 pub extern "stdcall" fn get_render_canvas_func() -> UnityRenderingEvent {
     handle_render_canvas
+}
+
+#[no_mangle]
+pub extern "stdcall" fn get_shutdown_func() -> UnityRenderingEvent {
+    handle_shutdown
 }
 
 #[no_mangle]
