@@ -31,8 +31,8 @@ fn build_renderer(
     );
 
     // During construction, Pathfinder currently binds its mask framebuffer
-    // as the current draw framebuffer and doesn't unbind it, so we'll do that
-    // ourselves.
+    // as the current draw framebuffer and doesn't restore the old one when
+    // it's done, so we'll do that ourselves.
     gl_util::set_draw_framebuffer_binding(framebuffer);
 
     renderer
@@ -60,22 +60,10 @@ impl Renderer {
     fn sync_gfx_state(&mut self) {
         let framebuffer = gl_util::get_draw_framebuffer_binding();
         let window_size = get_current_window_size();
-        if framebuffer != self.framebuffer {
-            info!(
-                "Framebuffer changed from {} to {}.",
-                self.framebuffer,
-                framebuffer
-            );
+        if window_size != self.window_size || framebuffer != self.framebuffer {
+            self.window_size = window_size;
             self.framebuffer = framebuffer;
-            self.window_size = window_size;
-            self.renderer = build_renderer(window_size, framebuffer, &self.loader);
-        } else if window_size != self.window_size {
-            info!(
-                "Window size changed from {:?} to {:?}.",
-                self.window_size,
-                window_size,
-            );
-            self.window_size = window_size;
+            self.renderer.device.set_default_framebuffer(framebuffer);
             self.renderer.replace_dest_framebuffer(DestFramebuffer::full_window(window_size));
             self.renderer.set_main_framebuffer_size(window_size);
         }
