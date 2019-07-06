@@ -1,11 +1,40 @@
 use libc::c_void;
 use std::ffi::{CString, CStr};
-use winapi::um::wingdi::wglGetProcAddress;
+use winapi::um::wingdi::{wglGetProcAddress, wglGetCurrentContext};
 use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress};
+use winapi::shared::windef::HGLRC;
 use winapi::shared::ntdef::NULL;
 use gl::types::*;
 
 const OPENGL32_DLL: &'static [u8] = b"opengl32.dll\0";
+
+pub struct ContextWatcher {
+    current_context: HGLRC
+}
+
+impl ContextWatcher {
+    pub fn new() -> Self {
+        ContextWatcher { current_context: get_current_context() }
+    }
+
+    pub fn changed(&mut self) -> bool {
+        let ctx = get_current_context();
+        if ctx != self.current_context {
+            info!("OpenGL context changed from {:?} to {:?}.", self.current_context, ctx);
+            self.current_context = ctx;
+            init();
+            true
+        } else {
+            false
+        }
+    }
+}
+
+pub fn get_current_context() -> HGLRC {
+    unsafe {
+        wglGetCurrentContext()
+    }
+}
 
 fn get_proc_address(name: &str) -> *const c_void {
     let mut ptr;
@@ -62,4 +91,11 @@ pub fn get_draw_framebuffer_binding() -> GLuint {
     }
 
     return fbo_id as GLuint;
+}
+
+pub fn set_draw_framebuffer_binding(fbo_id: GLuint) {
+    unsafe {
+        gl::BindFramebuffer(gl::FRAMEBUFFER, fbo_id);
+        assert_eq!(gl::GetError(), gl::NO_ERROR);
+    }
 }

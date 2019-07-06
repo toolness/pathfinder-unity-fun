@@ -32,24 +32,35 @@ struct PluginState {
     unity_interfaces: *const IUnityInterfaces,
     unity_renderer: Option<UnityGfxRenderer>,
     canvases: Mutex<HashMap<i32, Box<CanvasRenderingContext2D>>>,
-    renderer: Option<Renderer>,
+    renderers: HashMap<i32, Renderer>,
+    resources_dir: PathBuf,
+    context_watcher: Option<gl_util::ContextWatcher>,
     errored: bool
 }
 
 impl PluginState {
     pub fn new(unity_interfaces: *const IUnityInterfaces) -> Self {
+        let (errored, resources_dir) = match Self::find_resources_dir() {
+            Some(resources_dir) => (false, resources_dir),
+            None => (true, PathBuf::new())
+        };
+        if errored {
+            info!("Unable to find resources dir.");
+        }
         let mut plugin = PluginState {
             unity_interfaces,
             unity_renderer: None,
             canvases: Mutex::new(HashMap::new()),
-            renderer: None,
-            errored: false
+            context_watcher: None,
+            renderers: HashMap::new(),
+            resources_dir,
+            errored
         };
         plugin.initialize();
         plugin
     }
 
-    fn find_resources_dir(&mut self) -> Option<PathBuf> {
+    fn find_resources_dir() -> Option<PathBuf> {
         for dir_name in ["unity-project_Data", "Assets"].iter() {
             let mut resources_dir = env::current_dir().unwrap();
             resources_dir.push(dir_name);
@@ -100,28 +111,13 @@ impl PluginState {
                 info!("Unity renderer is {:?}.", self.unity_renderer);
                 if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
                     gl_util::init();
+                    self.context_watcher = Some(gl_util::ContextWatcher::new());
                     let (major, minor) = gl_util::get_version();
                     let version = gl_util::get_version_string();
                     info!("OpenGL version is {}.{} ({}).", major, minor, version);
                 }
             },
             _ => {}
-        }
-    }
-
-    fn try_to_init_renderer(&mut self) {
-        match self.find_resources_dir() {
-            None => {
-                info!("Unable to find resources dir.");
-                self.errored = true;
-            },
-            Some(resources_dir) => {
-                info!(
-                    "Found resources dir at {}, initializing renderer.",
-                    resources_dir.to_string_lossy()
-                );
-                self.renderer = Some(Renderer::new(resources_dir));
-            }
         }
     }
 
@@ -134,13 +130,19 @@ impl PluginState {
             return;
         }
         if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
-            if self.renderer.is_none() {
-                self.try_to_init_renderer();
-            }
-            if let Some(renderer) = &mut self.renderer {
-                if let Some(canvas) = self.canvases.lock().unwrap().remove(&canvas_id) {
-                    renderer.render(canvas);
+            if let Some(context_watcher) = &mut self.context_watcher {
+                if context_watcher.changed() {
+                    self.renderers.clear();
                 }
+            }
+            let resources_dir = &self.resources_dir;
+            let renderer = self.renderers.entry(canvas_id)
+              .or_insert_with(|| Renderer::new(resources_dir));
+            if let Some(canvas) = self.canvases.lock().unwrap().remove(&canvas_id) {
+                renderer.render(canvas);
+            } else {
+                info!("render() called with nonexistent canvas id {}.", canvas_id);
+                self.errored = true;
             }
         } else {
             info!(
