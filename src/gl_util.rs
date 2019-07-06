@@ -14,6 +14,7 @@ pub struct ContextWatcher {
 
 impl ContextWatcher {
     pub fn new() -> Self {
+        init();
         ContextWatcher { current_context: get_current_context() }
     }
 
@@ -51,7 +52,7 @@ fn get_proc_address(name: &str) -> *const c_void {
     return ptr;
 }
 
-pub fn init() {
+fn init() {
     gl::load_with(get_proc_address);
 }
 

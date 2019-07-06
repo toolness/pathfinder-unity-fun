@@ -32,9 +32,9 @@ struct PluginState {
     unity_interfaces: *const IUnityInterfaces,
     unity_renderer: Option<UnityGfxRenderer>,
     canvases: Mutex<HashMap<i32, Box<CanvasRenderingContext2D>>>,
-    renderers: HashMap<i32, Renderer>,
+    renderer: Option<Renderer>,
     resources_dir: PathBuf,
-    context_watcher: Option<gl_util::ContextWatcher>,
+    gl_context_watcher: Option<gl_util::ContextWatcher>,
     errored: bool
 }
 
@@ -51,8 +51,8 @@ impl PluginState {
             unity_interfaces,
             unity_renderer: None,
             canvases: Mutex::new(HashMap::new()),
-            context_watcher: None,
-            renderers: HashMap::new(),
+            gl_context_watcher: None,
+            renderer: None,
             resources_dir,
             errored
         };
@@ -110,8 +110,7 @@ impl PluginState {
                 self.unity_renderer = self.get_unity_renderer();
                 info!("Unity renderer is {:?}.", self.unity_renderer);
                 if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
-                    gl_util::init();
-                    self.context_watcher = Some(gl_util::ContextWatcher::new());
+                    self.gl_context_watcher = Some(gl_util::ContextWatcher::new());
                     let (major, minor) = gl_util::get_version();
                     let version = gl_util::get_version_string();
                     info!("OpenGL version is {}.{} ({}).", major, minor, version);
@@ -130,14 +129,13 @@ impl PluginState {
             return;
         }
         if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
-            if let Some(context_watcher) = &mut self.context_watcher {
-                if context_watcher.changed() {
-                    self.renderers.clear();
-                }
+            let context_watcher = self.gl_context_watcher.as_mut()
+              .expect("GL context watcher should exist!");
+            if context_watcher.changed() {
+                self.renderer = None;
             }
             let resources_dir = &self.resources_dir;
-            let renderer = self.renderers.entry(canvas_id)
-              .or_insert_with(|| Renderer::new(resources_dir));
+            let renderer = self.renderer.get_or_insert_with(|| Renderer::new(resources_dir));
             if let Some(canvas) = self.canvases.lock().unwrap().remove(&canvas_id) {
                 renderer.render(canvas);
             } else {
