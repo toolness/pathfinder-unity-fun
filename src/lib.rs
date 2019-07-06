@@ -32,7 +32,7 @@ struct PluginState {
     unity_interfaces: *const IUnityInterfaces,
     unity_renderer: Option<UnityGfxRenderer>,
     canvases: Mutex<HashMap<i32, Box<CanvasRenderingContext2D>>>,
-    renderer: Option<Renderer>,
+    renderers: HashMap<gl_util::Context, Renderer>,
     resources_dir: PathBuf,
     gl_context_watcher: Option<gl_util::ContextWatcher>,
     errored: bool
@@ -52,7 +52,7 @@ impl PluginState {
             unity_renderer: None,
             canvases: Mutex::new(HashMap::new()),
             gl_context_watcher: None,
-            renderer: None,
+            renderers: HashMap::new(),
             resources_dir,
             errored
         };
@@ -131,11 +131,13 @@ impl PluginState {
         if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
             let context_watcher = self.gl_context_watcher.as_mut()
               .expect("GL context watcher should exist!");
-            if context_watcher.changed() {
-                self.renderer = None;
-            }
+            let ctx = context_watcher.check();
             let resources_dir = &self.resources_dir;
-            let renderer = self.renderer.get_or_insert_with(|| Renderer::new(resources_dir));
+            let renderer = self.renderers.entry(ctx)
+              .or_insert_with(|| {
+                  info!("Creating a renderer for GL context {:?}.", ctx);
+                  Renderer::new(resources_dir)
+              });
             if let Some(canvas) = self.canvases.lock().unwrap().remove(&canvas_id) {
                 renderer.render(canvas);
             } else {

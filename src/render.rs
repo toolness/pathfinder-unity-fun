@@ -22,7 +22,6 @@ fn build_renderer(
     framebuffer: GLuint,
     loader: &FilesystemResourceLoader
 ) -> PathfinderRenderer<GLDevice> {
-    info!("Creating a rendererer for framebuffer {}/{:?}.", framebuffer, window_size);
     let renderer = pathfinder_renderer::gpu::renderer::Renderer::new(
         GLDevice::new(GLVersion::GL3, framebuffer),
         loader,
@@ -41,7 +40,6 @@ fn build_renderer(
 pub struct Renderer {
     renderer: PathfinderRenderer<GLDevice>,
     window_size: Vector2I,
-    loader: FilesystemResourceLoader,
     framebuffer: GLuint
 }
 
@@ -52,7 +50,7 @@ impl Renderer {
         let loader = FilesystemResourceLoader { directory: resources_dir.clone() };
         let renderer = build_renderer(window_size, framebuffer, &loader);
 
-        Renderer { renderer, window_size, framebuffer, loader }
+        Renderer { renderer, window_size, framebuffer }
     }
 
     // If Unity's window size/framebuffer changes, make sure our draw
