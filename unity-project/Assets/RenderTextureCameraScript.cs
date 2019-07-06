@@ -2,7 +2,8 @@
 
 public class RenderTextureCameraScript : MonoBehaviour
 {
-    private PFCanvasFontContext fontContext;
+    public GameObject globalState;
+    private GlobalState gState;
     public float fontSize;
     private float fontVelocity;
     private float maxFontSize;
@@ -11,7 +12,7 @@ public class RenderTextureCameraScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        fontContext = new PFCanvasFontContext();
+        gState = globalState.GetComponent<GlobalState>();
         fontSize = 10.0f;
         fontVelocity = 1.0f;
         maxFontSize = 160.0f;
@@ -19,7 +20,11 @@ public class RenderTextureCameraScript : MonoBehaviour
     }
 
     public void OnPostRender() {
-        var canvas = new PFCanvas(fontContext, new Vector2(256, 256));
+        if (!gState.IsPathfinderEnabled()) {
+            return;
+        }
+
+        var canvas = new PFCanvas(gState.GetFontContext(), new Vector2(256, 256));
 
         canvas.SetFontSize(fontSize);
         canvas.FillText("Yo!", new Vector2(10.0f, fontSize));

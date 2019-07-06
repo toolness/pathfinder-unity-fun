@@ -132,6 +132,14 @@ impl PluginState {
             let context_watcher = self.gl_context_watcher.as_mut()
               .expect("GL context watcher should exist!");
             let ctx = context_watcher.check();
+            if canvas_id == 0 {
+                let renderer = self.renderers.remove(&ctx);
+                if renderer.is_some() {
+                    info!("Shutting down renderer for GL context {:?}.", ctx);
+                    drop(renderer);
+                }
+                return;
+            }
             let resources_dir = &self.resources_dir;
             let renderer = self.renderers.entry(ctx)
               .or_insert_with(|| {
