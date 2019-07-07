@@ -31,10 +31,6 @@ public class RenderTextureCameraScript : MonoBehaviour
     }
 
     public void OnPostRender() {
-        if (!gState.IsPathfinderEnabled()) {
-            return;
-        }
-
         var tex = textureCamera.targetTexture;
         var drawableSize = new Vector2(tex.width, tex.height);
         float time = Time.frameCount;
@@ -49,15 +45,18 @@ public class RenderTextureCameraScript : MonoBehaviour
         var outerCenter = windowCenter + OUTER_RADIUS * new Vector2(sinTime, cosTime);
         var innerCenter = windowCenter + cosTime * INNER_RADIUS * new Vector2(1.0f, sinTime);
 
-        var canvas = new PFCanvas(gState.GetFontContext(), drawableSize);
-        canvas.SetLineWidth(CIRCLE_THICKNESS);
-        canvas.SetStrokeStyle(fgColor);
-
-        drawCircles(canvas, outerCenter);
-        drawCircles(canvas, innerCenter);
         textureCamera.backgroundColor = bgColor;
 
-        canvas.QueueForRendering();
+        if (gState.IsPathfinderEnabled()) {
+            var canvas = new PFCanvas(gState.GetFontContext(), drawableSize);
+            canvas.SetLineWidth(CIRCLE_THICKNESS);
+            canvas.SetStrokeStyle(fgColor);
+
+            drawCircles(canvas, outerCenter);
+            drawCircles(canvas, innerCenter);
+
+            canvas.QueueForRendering();
+        }
     }
 
     private void drawCircles(PFCanvas canvas, Vector2 center) {
