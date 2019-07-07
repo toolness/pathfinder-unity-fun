@@ -1,20 +1,21 @@
 ﻿using UnityEngine;
-using System;
-using System.Runtime.InteropServices;
 
 public class PathfinderCameraScript : MonoBehaviour
 {
-    private PFCanvasFontContext fontContext;
+    public GameObject globalState;
+    private GlobalState gState;
 
     // Start is called before the first frame update
     void Start()
     {
-        fontContext = new PFCanvasFontContext();
+        gState = globalState.GetComponent<GlobalState>();
     }
 
     public void OnPostRender() {
+        if (!gState.IsPathfinderEnabled()) return;
+
         // Make a canvas. We're going to draw a house.
-        var canvas = new PFCanvas(fontContext, new Vector2(Screen.width, Screen.height));
+        var canvas = new PFCanvas(gState.GetFontContext(), new Vector2(Screen.width, Screen.height));
 
         canvas.SetStrokeStyle(Color.blue);
         canvas.SetFillStyle(Color.green);
@@ -37,19 +38,14 @@ public class PathfinderCameraScript : MonoBehaviour
 
         canvas.SetFillStyle(Color.black);
         canvas.SetFontSize(24.0f);
-        canvas.FillText("Hello world\u2026", new Vector2(10.0f, 40.0f));
+        canvas.FillText(
+            "Press “" + GlobalState.pathfinderToggleKey + "” to toggle Pathfinder.",
+            new Vector2(10.0f, 40.0f)
+        );
 
-        canvas.QueueForRendering(1);
+        canvas.QueueForRendering();
 
         // This is temporary code just to make sure calls don't crash.
         path.Clone();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        if (Input.GetKey("escape")) {
-            Application.Quit();
-        }
     }
 }

@@ -28,28 +28,64 @@ use unity_interfaces::{
 };
 use render::Renderer;
 
+enum PluginCommand {
+    Shutdown,
+    RenderCanvas(i32)
+}
+
 struct PluginState {
+    // A pointer to Unity's plugin API that it gives us when our plugin
+    // is first loaded.
     unity_interfaces: *const IUnityInterfaces,
+
+    // The graphics backend that Unity is using.
     unity_renderer: Option<UnityGfxRenderer>,
+
+    // This is where we put Canvases that are ready to be rendered.
     canvases: Mutex<HashMap<i32, Box<CanvasRenderingContext2D>>>,
-    renderer: Option<Renderer>,
+
+    // Unity sometimes switches between different GL contexts, so we need to
+    // check when the current context has changed and adapt accordingly.
+    gl_context_watcher: Option<gl_util::ContextWatcher>,
+
+    // We use a separate renderer for each GL context that Unity uses. Ideally
+    // we'd have some separation between the kinds of resources that are shared
+    // between contexts (programs, shaders, etc) and those that aren't
+    // (framebuffers, vertex arrays, etc) so that we'd be able to manage resources
+    // more efficiently, but Pathfinder doesn't support such granularity right now.
+    renderers: HashMap<gl_util::Context, Renderer>,
+
+    // The directory where Pathfinder's resources (shaders, textures, etc) are.
+    resources_dir: PathBuf,
+
+    // Whether our plugin has had any errors or not. If it has, most calls to
+    // the plugin will be no-ops.
     errored: bool
 }
 
 impl PluginState {
     pub fn new(unity_interfaces: *const IUnityInterfaces) -> Self {
+        let (errored, resources_dir) = match Self::find_resources_dir() {
+            Some(resources_dir) => (false, resources_dir),
+            None => (true, PathBuf::new())
+        };
+        if errored {
+            info!("Unable to find resources dir.");
+        }
         let mut plugin = PluginState {
             unity_interfaces,
             unity_renderer: None,
             canvases: Mutex::new(HashMap::new()),
-            renderer: None,
-            errored: false
+            gl_context_watcher: None,
+            renderers: HashMap::new(),
+            resources_dir,
+            errored
         };
         plugin.initialize();
         plugin
     }
 
-    fn find_resources_dir(&mut self) -> Option<PathBuf> {
+    fn find_resources_dir() -> Option<PathBuf> {
         for dir_name in ["unity-project_Data", "Assets"].iter() {
             let mut resources_dir = env::current_dir().unwrap();
             resources_dir.push(dir_name);
@@ -99,7 +135,7 @@ impl PluginState {
                 self.unity_renderer = self.get_unity_renderer();
                 info!("Unity renderer is {:?}.", self.unity_renderer);
                 if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
-                    gl_util::init();
+                    self.gl_context_watcher = Some(gl_util::ContextWatcher::new());
                     let (major, minor) = gl_util::get_version();
                     let version = gl_util::get_version_string();
                     info!("OpenGL version is {}.{} ({}).", major, minor, version);
@@ -109,45 +145,61 @@ impl PluginState {
         }
     }
 
-    fn try_to_init_renderer(&mut self) {
-        match self.find_resources_dir() {
-            None => {
-                info!("Unable to find resources dir.");
-                self.errored = true;
-            },
-            Some(resources_dir) => {
-                info!(
-                    "Found resources dir at {}, initializing renderer.",
-                    resources_dir.to_string_lossy()
-                );
-                self.renderer = Some(Renderer::new(resources_dir));
-            }
-        }
-    }
-
     pub fn set_canvas(&mut self, id: i32, canvas: Box<CanvasRenderingContext2D>) {
         self.canvases.lock().unwrap().insert(id, canvas);
     }
 
-    pub fn render(&mut self, canvas_id: i32) {
+    fn execute_opengl_command(&mut self, cmd: PluginCommand) {
+        let context_watcher = self.gl_context_watcher.as_mut()
+            .expect("GL context watcher should exist!");
+        let ctx = context_watcher.check();
+        match cmd {
+            PluginCommand::Shutdown => {
+                // This will only release the plugin's resources for the current
+                // GL context at the time that it's called, which isn't ideal. The
+                // alternative is to try to switch to the other GL contexts that
+                // our other renderers exist in, shut them down, and then switch
+                // back, but this feels dangerous (although it does seem to work; see
+                // https://github.com/toolness/pathfinder-unity-fun/pull/6 for a
+                // proof-of-concept).
+                let renderer = self.renderers.remove(&ctx);
+                if renderer.is_some() {
+                    info!("Shutting down renderer for GL context {:?}!", ctx);
+                    drop(renderer);
+                }
+            },
+            PluginCommand::RenderCanvas(canvas_id) => {
+                let resources_dir = &self.resources_dir;
+                let renderer = self.renderers.entry(ctx)
+                    .or_insert_with(|| {
+                        info!("Creating a renderer for GL context {:?}.", ctx);
+                        Renderer::new(resources_dir)
+                    });
+                if let Some(canvas) = self.canvases.lock().unwrap().remove(&canvas_id) {
+                    renderer.render(canvas);
+                } else {
+                    info!("RenderCanvas called with nonexistent canvas id {}.", canvas_id);
+                    self.errored = true;
+                }
+            }
+        }
+    }
+
+    pub fn execute_command(&mut self, cmd: PluginCommand) {
         if self.errored {
             return;
         }
-        if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
-            if self.renderer.is_none() {
-                self.try_to_init_renderer();
+        match self.unity_renderer {
+            Some(UnityGfxRenderer::OpenGLCore) => {
+                self.execute_opengl_command(cmd);
+            },
+            _ => {
+                info!(
+                    "execute_command() called, but rendering backend {:?} is unsupported.",
+                    self.unity_renderer
+                );
+                self.errored = true;
             }
-            if let Some(renderer) = &mut self.renderer {
-                if let Some(canvas) = self.canvases.lock().unwrap().remove(&canvas_id) {
-                    renderer.render(canvas);
-                }
-            }
-        } else {
-            info!(
-                "render() called, but rendering backend {:?} is unsupported.",
-                self.unity_renderer
-            );
-            self.errored = true;
         }
     }
 }
@@ -195,13 +247,22 @@ fn get_plugin_state_mut() -> &'static mut PluginState {
     }
 }
 
+extern "stdcall" fn handle_shutdown(_event_id: c_int) {
+    get_plugin_state_mut().execute_command(PluginCommand::Shutdown);
+}
+
 extern "stdcall" fn handle_render_canvas(canvas_id: c_int) {
-    get_plugin_state_mut().render(canvas_id);
+    get_plugin_state_mut().execute_command(PluginCommand::RenderCanvas(canvas_id));
 }
 
 #[no_mangle]
 pub extern "stdcall" fn get_render_canvas_func() -> UnityRenderingEvent {
     handle_render_canvas
+}
+
+#[no_mangle]
+pub extern "stdcall" fn get_shutdown_func() -> UnityRenderingEvent {
+    handle_shutdown
 }
 
 #[no_mangle]
