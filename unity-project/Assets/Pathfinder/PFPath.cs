@@ -28,6 +28,12 @@ public class PFPath {
         PF.PFPathLineTo(handle, ref pfTo);
     }
 
+    public void Ellipse(Vector2 center, Vector2 axes, float rotation, float startAngle, float endAngle) {
+        var pfCenter = PFUnityConv.PFVector2F(center);
+        var pfAxes = PFUnityConv.PFVector2F(axes);
+        PF.PFPathEllipse(handle, ref pfCenter, ref pfAxes, rotation, startAngle, endAngle);
+    }
+
     public void QuadraticCurveTo(Vector2 ctrl, Vector2 to) {
         var pfCtrl = PFUnityConv.PFVector2F(ctrl);
         var pfTo = PFUnityConv.PFVector2F(to);
