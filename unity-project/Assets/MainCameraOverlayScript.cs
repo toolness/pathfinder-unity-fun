@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class PathfinderCameraScript : MonoBehaviour
+public class MainCameraOverlayScript : MonoBehaviour
 {
     public GameObject globalState;
     private GlobalState gState;
