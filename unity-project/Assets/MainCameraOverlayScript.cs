@@ -13,14 +13,9 @@ public class MainCameraOverlayScript : MonoBehaviour
         instructions = new PFString("Press “" + InputScript.pathfinderToggleKey + "” to toggle Pathfinder.");
     }
 
-    public void OnPostRender() {
-        if (!gState.IsPathfinderEnabled()) return;
-
-        // Make a canvas. We're going to draw a house.
-        var canvas = new PFCanvas(gState.GetFontContext(), new Vector2(Screen.width, Screen.height));
-
-        canvas.SetStrokeStyle(Color.blue);
-        canvas.SetFillStyle(Color.green);
+    private void DrawHouse(PFCanvas canvas) {
+        canvas.SetStrokeStyle(Color.black);
+        canvas.SetFillStyle(Color.black);
         canvas.SetLineJoin(PFLineJoin.Round);
         canvas.SetLineWidth(10.0f);
 
@@ -37,7 +32,9 @@ public class MainCameraOverlayScript : MonoBehaviour
         path.LineTo(new Vector2(250.0f, 140.0f));
         path.ClosePath();
         canvas.StrokePath(path);
+    }
 
+    private void DrawInstructions(PFCanvas canvas) {
         canvas.SetFillStyle(Color.black);
         canvas.SetFontSize(24.0f);
         var textWidth = canvas.MeasureText(instructions).width;
@@ -45,6 +42,15 @@ public class MainCameraOverlayScript : MonoBehaviour
             instructions,
             new Vector2(Screen.width / 2 - textWidth / 2, 40.0f)
         );
+    }
+
+    public void OnPostRender() {
+        if (!gState.IsPathfinderEnabled()) return;
+
+        var canvas = new PFCanvas(gState.GetFontContext(), new Vector2(Screen.width, Screen.height));
+
+        DrawHouse(canvas);
+        DrawInstructions(canvas);
 
         canvas.QueueForRendering();
     }
