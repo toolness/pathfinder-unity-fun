@@ -8,7 +8,7 @@ Right now all we have is a plugin that displays a Pathfinder-rendered
 overlay/HUD, along with a rotating cube that has a Pathfinder-generated
 render texture on it:
 
-<img src="https://user-images.githubusercontent.com/124687/60773386-e52cb700-a0d2-11e9-8561-2939c9301779.png">
+<img src="https://user-images.githubusercontent.com/124687/60773517-9a13a380-a0d4-11e9-955c-a1cb60bc41e4.png">
 
 ## Quick start
 
