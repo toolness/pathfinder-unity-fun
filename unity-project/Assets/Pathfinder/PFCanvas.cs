@@ -24,14 +24,17 @@ public class PFCanvas {
     }
 
     public void SetLineJoin(PFLineJoin join) {
+        EnsureHandleIsValid();
         PF.PFCanvasSetLineJoin(handle, (byte) join);
     }
 
     public void SetFillStyle(PFFillStyle style) {
+        EnsureHandleIsValid();
         PF.PFCanvasSetFillStyle(handle, style.handle);
     }
 
     public void SetStrokeStyle(PFFillStyle style) {
+        EnsureHandleIsValid();
         PF.PFCanvasSetStrokeStyle(handle, style.handle);
     }
 
@@ -47,16 +50,19 @@ public class PFCanvas {
     }
 
     public void FillText(PFString str, Vector2 position) {
+        EnsureHandleIsValid();
         var pfVector = PFUnityConv.PFVector2F(position);
         PF.PFCanvasFillText(handle, str.handle, str.len, ref pfVector);
     }
 
     public void StrokeText(PFString str, Vector2 position) {
+        EnsureHandleIsValid();
         var pfVector = PFUnityConv.PFVector2F(position);
         PF.PFCanvasStrokeText(handle, str.handle, str.len, ref pfVector);
     }
 
     public void SetFontSize(float size) {
+        EnsureHandleIsValid();
         PF.PFCanvasSetFontSize(handle, size);
     }
 
@@ -79,6 +85,7 @@ public class PFCanvas {
     }
 
     public void QueueForRendering() {
+        EnsureHandleIsValid();
         var id = nextCanvasId++;
         PFPluginExports.queue_canvas_for_rendering(handle, id);
         handle = IntPtr.Zero;
