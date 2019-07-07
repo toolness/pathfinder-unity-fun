@@ -10,7 +10,7 @@ public class RenderTextureCameraScript : MonoBehaviour
     private const float VELOCITY = 0.02f;
     private const float OUTER_RADIUS = 64.0f;
     private const float INNER_RADIUS = 48.0f;
-    private const int CIRCLE_COUNT = 12;
+    private const int CIRCLE_COUNT = 2;
     private const float CIRCLE_SPACING = 48.0f;
     private const float CIRCLE_THICKNESS = 16.0f;
     private const float COLOR_CYCLE_SPEED = 0.0025f;
