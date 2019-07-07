@@ -4,21 +4,21 @@ public class RenderTextureCameraScript : MonoBehaviour
 {
     public GameObject globalState;
     private GlobalStateScript gState;
-    private Camera ourCamera;
-    public float fontSize;
-    private float fontVelocity;
-    private float maxFontSize;
-    private float minFontSize;
+    private RenderTexture renderTexture;
+
+    private const float VELOCITY = 0.02f;
+    private const float OUTER_RADIUS = 64.0f;
+    private const float INNER_RADIUS = 48.0f;
+    private const int CIRCLE_COUNT = 12;
+    private const float CIRCLE_SPACING = 48.0f;
+    private const float CIRCLE_THICKNESS = 16.0f;
+    private const float COLOR_CYCLE_SPEED = 0.0025f;
 
     // Start is called before the first frame update
     void Start()
     {
         gState = globalState.GetComponent<GlobalStateScript>();
-        ourCamera = GetComponent<Camera>();
-        fontSize = 10.0f;
-        fontVelocity = 1.0f;
-        maxFontSize = 160.0f;
-        minFontSize = 10.0f;
+        renderTexture = GetComponent<Camera>().targetTexture;
     }
 
     public void OnPostRender() {
@@ -26,24 +26,36 @@ public class RenderTextureCameraScript : MonoBehaviour
             return;
         }
 
-        var tex = ourCamera.targetTexture;
-        var size = new Vector2(tex.width, tex.height);
-        var canvas = new PFCanvas(gState.GetFontContext(), size);
+        var drawableSize = new Vector2(renderTexture.width, renderTexture.height);
+        float time = Time.frameCount;
+        var sinTime = Mathf.Sin(time * VELOCITY);
+        var cosTime = Mathf.Cos(time * VELOCITY);
+        var colorTime = time * COLOR_CYCLE_SPEED;
+        // TODO: Calculate background color from gradient and set it.
+        // TODO: Calculate foreground color from gradient.
+        var fgColor = Color.black;
+        fgColor.a = 0.75f;
 
-        canvas.SetFontSize(fontSize);
-        canvas.FillText("Yo!", new Vector2(10.0f, fontSize));
+        var windowCenter = drawableSize * 0.5f;
+        var outerCenter = windowCenter + OUTER_RADIUS * new Vector2(sinTime, cosTime);
+        var innerCenter = windowCenter + cosTime * INNER_RADIUS * new Vector2(1.0f, sinTime);
+
+        var canvas = new PFCanvas(gState.GetFontContext(), drawableSize);
+        canvas.SetLineWidth(CIRCLE_THICKNESS);
+        canvas.SetStrokeStyle(fgColor);
+
+        drawCircles(canvas, outerCenter);
+        drawCircles(canvas, innerCenter);
 
         canvas.QueueForRendering();
     }
 
-    public void Update() {
-        fontSize += fontVelocity;
-        if (fontSize > maxFontSize) {
-            fontSize = maxFontSize;
-            fontVelocity = -Mathf.Abs(fontVelocity);
-        } else if (fontSize < minFontSize) {
-            fontSize = minFontSize;
-            fontVelocity = Mathf.Abs(fontVelocity);
+    private void drawCircles(PFCanvas canvas, Vector2 center) {
+        for (int index = 0; index < CIRCLE_COUNT; index++) {
+            var radius = (index + 1) * CIRCLE_SPACING;
+            var path = new PFPath();
+            path.Ellipse(center, new Vector2(radius, radius), 0, 0, Mathf.PI * 2.0f);
+            canvas.StrokePath(path);
         }
     }
 }

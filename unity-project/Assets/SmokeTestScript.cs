@@ -20,8 +20,6 @@ public class SmokeTestScript : MonoBehaviour
         if (!gState.IsPathfinderEnabled()) return;
 
         var path = new PFPath();
-        // We should be able to draw ellipses.
-        path.Ellipse(new Vector2(1, 2), new Vector2(3, 4), 0, 0, Mathf.PI / 2);
         // We should be able to clone paths.
         path.Clone();
 
