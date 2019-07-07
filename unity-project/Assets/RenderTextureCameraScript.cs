@@ -3,7 +3,7 @@
 public class RenderTextureCameraScript : MonoBehaviour
 {
     public GameObject globalState;
-    private GlobalState gState;
+    private GlobalStateScript gState;
     private Camera ourCamera;
     public float fontSize;
     private float fontVelocity;
@@ -13,7 +13,7 @@ public class RenderTextureCameraScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        gState = globalState.GetComponent<GlobalState>();
+        gState = globalState.GetComponent<GlobalStateScript>();
         ourCamera = GetComponent<Camera>();
         fontSize = 10.0f;
         fontVelocity = 1.0f;

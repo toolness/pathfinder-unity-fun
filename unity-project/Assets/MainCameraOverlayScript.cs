@@ -3,12 +3,12 @@
 public class MainCameraOverlayScript : MonoBehaviour
 {
     public GameObject globalState;
-    private GlobalState gState;
+    private GlobalStateScript gState;
 
     // Start is called before the first frame update
     void Start()
     {
-        gState = globalState.GetComponent<GlobalState>();
+        gState = globalState.GetComponent<GlobalStateScript>();
     }
 
     public void OnPostRender() {

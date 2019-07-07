@@ -15,7 +15,7 @@ public class SmokeTestScript : MonoBehaviour
         if (ranTests) return;
 
         // Just some smoke tests to make sure we don't segfault.
-        var gState = GetComponent<GlobalState>();
+        var gState = GetComponent<GlobalStateScript>();
 
         if (!gState.IsPathfinderEnabled()) return;
 

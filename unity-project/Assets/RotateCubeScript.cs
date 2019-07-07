@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class RotateCube : MonoBehaviour
+public class RotateCubeScript : MonoBehaviour
 {
     private float angle = 0.0f;
 

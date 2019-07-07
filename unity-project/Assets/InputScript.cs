@@ -5,10 +5,10 @@ using UnityEngine;
 public class InputScript : MonoBehaviour
 {
     public static readonly string pathfinderToggleKey = "p";
-    private GlobalState gState;
+    private GlobalStateScript gState;
 
     void Start() {
-        gState = GetComponent<GlobalState>();
+        gState = GetComponent<GlobalStateScript>();
     }
 
     // Update is called once per frame

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GlobalState : MonoBehaviour
+public class GlobalStateScript : MonoBehaviour
 {
     private PFCanvasFontContext fontContext;
 
