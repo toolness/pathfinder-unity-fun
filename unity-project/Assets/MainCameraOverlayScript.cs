@@ -44,8 +44,5 @@ public class MainCameraOverlayScript : MonoBehaviour
         );
 
         canvas.QueueForRendering();
-
-        // This is temporary code just to make sure calls don't crash.
-        path.Clone();
     }
 }
