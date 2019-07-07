@@ -39,7 +39,7 @@ public class PathfinderCameraScript : MonoBehaviour
         canvas.SetFillStyle(Color.black);
         canvas.SetFontSize(24.0f);
         canvas.FillText(
-            "Press “" + GlobalState.pathfinderToggleKey + "” to toggle Pathfinder.",
+            "Press “" + InputScript.pathfinderToggleKey + "” to toggle Pathfinder.",
             new Vector2(10.0f, 40.0f)
         );
 

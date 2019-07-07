@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class GlobalState : MonoBehaviour
 {
-    public static readonly string pathfinderToggleKey = "a";
     private PFCanvasFontContext fontContext;
 
     // Start is called before the first frame update
@@ -17,23 +16,16 @@ public class GlobalState : MonoBehaviour
         return fontContext != null;
     }
 
-    public PFCanvasFontContext GetFontContext() {
-        return fontContext;
+    public void TogglePathfinderEnabled() {
+        if (fontContext != null) {
+            fontContext = null;
+            PFPlugin.ReleaseResources();
+        } else {
+            fontContext = new PFCanvasFontContext();
+        }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        if (Input.GetKeyUp(pathfinderToggleKey)) {
-            if (fontContext != null) {
-                fontContext = null;
-                PFPlugin.ReleaseResources();
-            } else {
-                fontContext = new PFCanvasFontContext();
-            }
-        }
-        if (Input.GetKey("escape")) {
-            Application.Quit();
-        }
+    public PFCanvasFontContext GetFontContext() {
+        return fontContext;
     }
 }
