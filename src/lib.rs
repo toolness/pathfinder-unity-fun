@@ -133,7 +133,6 @@ impl PluginState {
             Some(UnityGfxDeviceEventType::Initialize) => {
                 self.log_unity_renderer_info();
                 self.unity_renderer = self.get_unity_renderer();
-                info!("Unity renderer is {:?}.", self.unity_renderer);
                 if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
                     self.gl_context_watcher = Some(gl_util::ContextWatcher::new());
                     let (major, minor) = gl_util::get_version();
