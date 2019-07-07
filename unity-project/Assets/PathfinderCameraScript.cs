@@ -43,7 +43,7 @@ public class PathfinderCameraScript : MonoBehaviour
             new Vector2(10.0f, 40.0f)
         );
 
-        canvas.QueueForRendering(1);
+        canvas.QueueForRendering();
 
         // This is temporary code just to make sure calls don't crash.
         path.Clone();

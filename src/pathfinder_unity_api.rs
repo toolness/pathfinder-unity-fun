@@ -13,7 +13,7 @@
 //! C bindings to Pathfinder.
 
 use font_kit::handle::Handle;
-use foreign_types::ForeignTypeRef;
+
 use gl;
 use pathfinder_canvas::{CanvasFontContext, CanvasRenderingContext2D, FillStyle, LineJoin};
 use pathfinder_canvas::{Path2D, TextMetrics};

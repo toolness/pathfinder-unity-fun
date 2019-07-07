@@ -4,7 +4,7 @@ public class RenderTextureCameraScript : MonoBehaviour
 {
     public GameObject globalState;
     private GlobalState gState;
-    private Camera camera;
+    private Camera ourCamera;
     public float fontSize;
     private float fontVelocity;
     private float maxFontSize;
@@ -14,7 +14,7 @@ public class RenderTextureCameraScript : MonoBehaviour
     void Start()
     {
         gState = globalState.GetComponent<GlobalState>();
-        camera = GetComponent<Camera>();
+        ourCamera = GetComponent<Camera>();
         fontSize = 10.0f;
         fontVelocity = 1.0f;
         maxFontSize = 160.0f;
@@ -26,14 +26,14 @@ public class RenderTextureCameraScript : MonoBehaviour
             return;
         }
 
-        var tex = camera.targetTexture;
+        var tex = ourCamera.targetTexture;
         var size = new Vector2(tex.width, tex.height);
         var canvas = new PFCanvas(gState.GetFontContext(), size);
 
         canvas.SetFontSize(fontSize);
         canvas.FillText("Yo!", new Vector2(10.0f, fontSize));
 
-        canvas.QueueForRendering(2);
+        canvas.QueueForRendering();
     }
 
     public void Update() {

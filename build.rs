@@ -51,7 +51,20 @@ fn write_if_changed(path_parts: &PathParts, content: &String) {
 
 fn build_pathfinder_rust_code() {
     let mut content = read_file(&["pathfinder", "c", "src", "lib.rs"])
-        .replace("extern \"C\"", "extern \"stdcall\"");
+        // Unity uses the "stdcall" calling convention, so we'll substitute
+        // the C API's default "C" calling convention for it.
+        //
+        // TODO: It seems possible to specify the calling convention on the
+        // C# side via an attribute, so we could potentially just use that
+        // instead of this hackery.
+        .replace("extern \"C\"", "extern \"stdcall\"")
+        // This is an unused import for Windows OpenGL and we don't want
+        // an annoying warning logged so we'll just remove it.
+        // 
+        // TODO: Change Pathfinder upstream to not import it if the
+        // build configuration doesn't need it, which will obviate the
+        // need for this line.
+        .replace("use foreign_types::ForeignTypeRef;", "");
 
     content = String::from(
         "// This file has been auto-generated, please do not edit it.\n\n"

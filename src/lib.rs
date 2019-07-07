@@ -34,12 +34,32 @@ enum PluginCommand {
 }
 
 struct PluginState {
+    // A pointer to Unity's plugin API that it gives us when our plugin
+    // is first loaded.
     unity_interfaces: *const IUnityInterfaces,
+
+    // The graphics backend that Unity is using.
     unity_renderer: Option<UnityGfxRenderer>,
+
+    // This is where we put Canvases that are ready to be rendered.
     canvases: Mutex<HashMap<i32, Box<CanvasRenderingContext2D>>>,
-    renderers: HashMap<gl_util::Context, Renderer>,
-    resources_dir: PathBuf,
+
+    // Unity sometimes switches between different GL contexts, so we need to
+    // check when the current context has changed and adapt accordingly.
     gl_context_watcher: Option<gl_util::ContextWatcher>,
+
+    // We use a separate renderer for each GL context that Unity uses. Ideally
+    // we'd have some separation between the kinds of resources that are shared
+    // between contexts (programs, shaders, etc) and those that aren't
+    // (framebuffers, vertex arrays, etc) so that we'd be able to manage resources
+    // more efficiently, but Pathfinder doesn't support such granularity right now.
+    renderers: HashMap<gl_util::Context, Renderer>,
+
+    // The directory where Pathfinder's resources (shaders, textures, etc) are.
+    resources_dir: PathBuf,
+
+    // Whether our plugin has had any errors or not. If it has, most calls to
+    // the plugin will be no-ops.
     errored: bool
 }
 
@@ -113,7 +133,6 @@ impl PluginState {
             Some(UnityGfxDeviceEventType::Initialize) => {
                 self.log_unity_renderer_info();
                 self.unity_renderer = self.get_unity_renderer();
-                info!("Unity renderer is {:?}.", self.unity_renderer);
                 if let Some(UnityGfxRenderer::OpenGLCore) = self.unity_renderer {
                     self.gl_context_watcher = Some(gl_util::ContextWatcher::new());
                     let (major, minor) = gl_util::get_version();
@@ -135,6 +154,13 @@ impl PluginState {
         let ctx = context_watcher.check();
         match cmd {
             PluginCommand::Shutdown => {
+                // This will only release the plugin's resources for the current
+                // GL context at the time that it's called, which isn't ideal. The
+                // alternative is to try to switch to the other GL contexts that
+                // our other renderers exist in, shut them down, and then switch
+                // back, but this feels dangerous (although it does seem to work; see
+                // https://github.com/toolness/pathfinder-unity-fun/pull/6 for a
+                // proof-of-concept).
                 let renderer = self.renderers.remove(&ctx);
                 if renderer.is_some() {
                     info!("Shutting down renderer for current GL context {:?}.", ctx);

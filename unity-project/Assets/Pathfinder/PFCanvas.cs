@@ -10,6 +10,8 @@ public enum PFLineJoin : byte {
 public class PFCanvas {
     private IntPtr handle;
 
+    private static int nextCanvasId = 1;
+
     public PFCanvas(PFCanvasFontContext fontContext, Vector2 size) {
         var pfSize = PFUnityConv.PFVector2F(size);
         handle = PF.PFCanvasCreate(fontContext.PrepareToConsume(), ref pfSize);
@@ -76,7 +78,8 @@ public class PFCanvas {
         PF.PFCanvasFillPath(handle, pathHandleToConsume);
     }
 
-    public void QueueForRendering(Int32 id) {
+    public void QueueForRendering() {
+        var id = nextCanvasId++;
         PFPluginExports.queue_canvas_for_rendering(handle, id);
         handle = IntPtr.Zero;
         GL.IssuePluginEvent(PFPluginExports.get_render_canvas_func(), id);
