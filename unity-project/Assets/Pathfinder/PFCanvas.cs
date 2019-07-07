@@ -61,6 +61,13 @@ public class PFCanvas {
         PF.PFCanvasStrokeText(handle, str.handle, str.len, ref pfVector);
     }
 
+    public PFTextMetrics MeasureText(PFString str) {
+        EnsureHandleIsValid();
+        var textMetrics = new PFTextMetrics();
+        PF.PFCanvasMeasureText(handle, str.handle, str.len, ref textMetrics);
+        return textMetrics;
+    }
+
     public void SetFontSize(float size) {
         EnsureHandleIsValid();
         PF.PFCanvasSetFontSize(handle, size);

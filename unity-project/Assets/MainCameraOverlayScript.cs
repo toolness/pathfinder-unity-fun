@@ -4,11 +4,13 @@ public class MainCameraOverlayScript : MonoBehaviour
 {
     public GameObject globalState;
     private GlobalStateScript gState;
+    private PFString instructions;
 
     // Start is called before the first frame update
     void Start()
     {
         gState = globalState.GetComponent<GlobalStateScript>();
+        instructions = new PFString("Press “" + InputScript.pathfinderToggleKey + "” to toggle Pathfinder.");
     }
 
     public void OnPostRender() {
@@ -38,9 +40,10 @@ public class MainCameraOverlayScript : MonoBehaviour
 
         canvas.SetFillStyle(Color.black);
         canvas.SetFontSize(24.0f);
+        var textWidth = canvas.MeasureText(instructions).width;
         canvas.FillText(
-            "Press “" + InputScript.pathfinderToggleKey + "” to toggle Pathfinder.",
-            new Vector2(10.0f, 40.0f)
+            instructions,
+            new Vector2(Screen.width / 2 - textWidth / 2, 40.0f)
         );
 
         canvas.QueueForRendering();
