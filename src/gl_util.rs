@@ -1,8 +1,10 @@
 use libc::c_void;
 use std::ffi::{CString, CStr};
-use winapi::um::wingdi::{wglGetProcAddress, wglGetCurrentContext};
+use std::collections::HashMap;
+use winapi::um::wingdi::{wglGetProcAddress, wglGetCurrentContext, wglGetCurrentDC, wglMakeCurrent};
 use winapi::um::libloaderapi::{LoadLibraryA, GetProcAddress};
-use winapi::shared::windef::HGLRC;
+use winapi::shared::minwindef::TRUE;
+use winapi::shared::windef::{HGLRC, HDC};
 use winapi::shared::ntdef::NULL;
 use gl::types::*;
 
@@ -10,20 +12,73 @@ const OPENGL32_DLL: &'static [u8] = b"opengl32.dll\0";
 
 pub type Context = HGLRC;
 
+pub struct ContextSwitcher {
+    orig_ctx: HGLRC,
+    orig_dc: HDC,
+}
+
+impl ContextSwitcher {
+    pub fn try_new(ctx: HGLRC, dc: HDC) -> Option<Self> {
+        let orig_ctx = unsafe { wglGetCurrentContext() };
+        let orig_dc = unsafe { wglGetCurrentDC() };
+        info!("Switching to GL context {:?} using HDC {:?}.", ctx, dc);
+        let success = unsafe { wglMakeCurrent(dc, ctx) };
+        if success == TRUE {
+            init();
+            Some(ContextSwitcher { orig_ctx, orig_dc })
+        } else {
+            info!("Switch failed!");
+            None
+        }
+    }
+}
+
+impl Drop for ContextSwitcher {
+    fn drop(&mut self) {
+        unsafe {
+            let dc = self.orig_dc;
+            let success = wglMakeCurrent(dc, self.orig_ctx);
+            if success == TRUE {
+                info!("Switched back to original GL context {:?}.", dc);
+                init();
+            } else {
+                info!("Could not switch back to original GL context {:?}!", dc);
+            }
+        }
+    }
+}
+
 pub struct ContextWatcher {
-    current_context: HGLRC
+    current_context: HGLRC,
+    context_dcs: HashMap<HGLRC, HDC>
 }
 
 impl ContextWatcher {
     pub fn new() -> Self {
         init();
-        ContextWatcher { current_context: get_current_context() }
+        ContextWatcher {
+            current_context: get_current_context(),
+            context_dcs: HashMap::new()
+        }
+    }
+
+    pub fn switch_to(&mut self, ctx: Context) -> Option<ContextSwitcher> {
+        if let Some(hdc) = self.context_dcs.get(&ctx) {
+            ContextSwitcher::try_new(ctx, *hdc)
+        } else {
+            info!("Unable to switch to GL context {:?} because no HDC for it exists.", ctx);
+            None
+        }
     }
 
     pub fn check(&mut self) -> Context {
         let ctx = get_current_context();
         if ctx != self.current_context {
             self.current_context = ctx;
+            let hdc = unsafe { wglGetCurrentDC() };
+            if hdc as *const c_void != NULL {
+                self.context_dcs.insert(ctx, hdc);
+            }
             init();
         }
         self.current_context

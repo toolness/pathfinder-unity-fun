@@ -140,6 +140,9 @@ impl PluginState {
                     info!("OpenGL version is {}.{} ({}).", major, minor, version);
                 }
             },
+            Some(UnityGfxDeviceEventType::Shutdown) => {
+                self.execute_command(PluginCommand::Shutdown);
+            },
             _ => {}
         }
     }
@@ -154,17 +157,26 @@ impl PluginState {
         let ctx = context_watcher.check();
         match cmd {
             PluginCommand::Shutdown => {
-                // This will only release the plugin's resources for the current
-                // GL context at the time that it's called, which isn't ideal. The
-                // alternative is to try to switch to the other GL contexts that
-                // our other renderers exist in, shut them down, and then switch
-                // back, but this feels dangerous (although it does seem to work; see
-                // https://github.com/toolness/pathfinder-unity-fun/pull/6 for a
-                // proof-of-concept).
+                // We'll first try shutting down the renderer for the current GL
+                // context, if any, which should be straightforward.
                 let renderer = self.renderers.remove(&ctx);
                 if renderer.is_some() {
-                    info!("Shutting down renderer for GL context {:?}!", ctx);
+                    info!("Shutting down renderer for current GL context {:?}.", ctx);
                     drop(renderer);
+                }
+                // Shutting down the other renderers is trickier, because they're
+                // bound to other GL contexts: we need to switch over to each
+                // before shutting down it's associated renderer, and then switch
+                // back to our original GL context (if any) once we're done.
+                let keys: Vec<gl_util::Context> = self.renderers.keys().map(|k| *k).collect();
+                for ctx in keys.iter() {
+                    if let Some(ctx_switcher) = context_watcher.switch_to(*ctx) {
+                        if let Some(renderer) = self.renderers.remove(&ctx) {
+                            info!("Shutting down renderer for GL context {:?}.", ctx);
+                            drop(renderer);
+                        }
+                        drop(ctx_switcher);
+                    }
                 }
             },
             PluginCommand::RenderCanvas(canvas_id) => {

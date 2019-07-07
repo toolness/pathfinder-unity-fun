@@ -14,13 +14,6 @@ public class GlobalState : MonoBehaviour
     }
 
     public bool IsPathfinderEnabled() {
-        if (fontContext == null) {
-            // This will only release the plugin's resources for the current
-            // GL context at the time that it's called, so we'll intentionally
-            // call it frequently in hopes that it will eventually release
-            // the resources from all GL contexts that Unity uses.
-            PFPlugin.ReleaseResources();
-        }
         return fontContext != null;
     }
 
@@ -34,6 +27,7 @@ public class GlobalState : MonoBehaviour
         if (Input.GetKeyUp(pathfinderToggleKey)) {
             if (fontContext != null) {
                 fontContext = null;
+                PFPlugin.ReleaseResources();
             } else {
                 fontContext = new PFCanvasFontContext();
             }
