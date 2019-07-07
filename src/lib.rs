@@ -137,8 +137,18 @@ impl PluginState {
             PluginCommand::Shutdown => {
                 let renderer = self.renderers.remove(&ctx);
                 if renderer.is_some() {
-                    info!("Shutting down renderer for GL context {:?}!", ctx);
+                    info!("Shutting down renderer for current GL context {:?}.", ctx);
                     drop(renderer);
+                }
+                let keys: Vec<gl_util::Context> = self.renderers.keys().map(|k| *k).collect();
+                for ctx in keys.iter() {
+                    if let Some(ctx_switcher) = context_watcher.switch_to(*ctx) {
+                        if let Some(renderer) = self.renderers.remove(&ctx) {
+                            info!("Shutting down renderer for GL context {:?}.", ctx);
+                            drop(renderer);
+                        }
+                        drop(ctx_switcher);
+                    }
                 }
             },
             PluginCommand::RenderCanvas(canvas_id) => {
