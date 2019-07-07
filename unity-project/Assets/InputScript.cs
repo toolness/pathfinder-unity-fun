@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class InputScript : MonoBehaviour
 {
-    public static readonly string pathfinderToggleKey = "a";
+    public static readonly string pathfinderToggleKey = "p";
     private GlobalState gState;
 
     void Start() {
