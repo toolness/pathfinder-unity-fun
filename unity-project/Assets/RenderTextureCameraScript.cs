@@ -14,6 +14,7 @@ public class RenderTextureCameraScript : MonoBehaviour
     private const float CIRCLE_SPACING = 48.0f;
     private const float CIRCLE_THICKNESS = 16.0f;
     private const float COLOR_CYCLE_SPEED = 0.0025f;
+    private const float SCALE = 2.0f;
 
     // Start is called before the first frame update
     void Start()
@@ -49,7 +50,7 @@ public class RenderTextureCameraScript : MonoBehaviour
 
         if (gState.IsPathfinderEnabled()) {
             var canvas = new PFCanvas(gState.GetFontContext(), drawableSize);
-            canvas.SetLineWidth(CIRCLE_THICKNESS);
+            canvas.SetLineWidth(CIRCLE_THICKNESS * SCALE);
             canvas.SetStrokeStyle(fgColor);
 
             drawCircles(canvas, outerCenter);
@@ -61,7 +62,7 @@ public class RenderTextureCameraScript : MonoBehaviour
 
     private void drawCircles(PFCanvas canvas, Vector2 center) {
         for (int index = 0; index < CIRCLE_COUNT; index++) {
-            var radius = (index + 1) * CIRCLE_SPACING;
+            var radius = (index + 1) * CIRCLE_SPACING * SCALE;
             var path = new PFPath();
             path.Ellipse(center, new Vector2(radius, radius), 0, 0, Mathf.PI * 2.0f);
             canvas.StrokePath(path);
