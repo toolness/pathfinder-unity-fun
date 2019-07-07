@@ -33,7 +33,7 @@ public class RenderTextureCameraScript : MonoBehaviour
         canvas.SetFontSize(fontSize);
         canvas.FillText("Yo!", new Vector2(10.0f, fontSize));
 
-        canvas.QueueForRendering(2);
+        canvas.QueueForRendering();
     }
 
     public void Update() {
