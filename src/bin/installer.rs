@@ -1,5 +1,6 @@
 use std::env;
 use std::path::PathBuf;
+use std::process::Command;
 use fs_extra::dir;
 
 type PathParts = [&'static str];
@@ -29,7 +30,22 @@ fn copy_resources_dir(dest_dir: &PathParts) {
     dir::copy(path_from_cwd(&resources_dir), dest_pathbuf, &copy_options).unwrap();
 }
 
+fn build() {
+    let mut child = Command::new("cargo")
+        .arg("build")
+        .arg("--lib")
+        .spawn()
+        .expect("failed to run cargo");
+    let ecode = child.wait().expect("failed to wait on cargo");
+    if !ecode.success() {
+        std::process::exit(1);
+    }
+}
+
 fn main() {
+    println!("Building Pathfinder Unity plugin...");
+    build();
+    println!("Copying resource directories...");
     copy_resources_dir(&["unity-project", "Assets", "StreamingAssets", "pathfinder"]);
     copy_resources_dir(&["dist", "unity-project_Data", "StreamingAssets", "pathfinder"]);
 }
