@@ -5,6 +5,9 @@ use fs_extra::{dir, file};
 
 type PathParts = [&'static str];
 
+const RESOURCES_DIR: [&'static str; 2] = ["pathfinder", "resources"];
+const DLL_PATH: [&'static str; 3] = ["target", "debug", "pathfinder_c_api_fun.dll"];
+
 fn path_from_cwd(parts: &PathParts) -> PathBuf {
     let mut pathbuf = env::current_dir().unwrap();
     for part in parts.iter() {
@@ -14,7 +17,6 @@ fn path_from_cwd(parts: &PathParts) -> PathBuf {
 }
 
 fn copy_resources_dir(dest_dir: &PathParts) {
-    let resources_dir = ["pathfinder", "resources"];
     let copy_options = dir::CopyOptions {
         overwrite: true,
         skip_exist: false,
@@ -25,13 +27,12 @@ fn copy_resources_dir(dest_dir: &PathParts) {
     let dest_pathbuf = path_from_cwd(dest_dir);
     let erase = false;
 
-    println!("{} -> {}", resources_dir.join("/"), dest_dir.join("/"));
+    println!("{} -> {}", RESOURCES_DIR.join("/"), dest_dir.join("/"));
     dir::create_all(dest_pathbuf.clone(), erase).unwrap();
-    dir::copy(path_from_cwd(&resources_dir), dest_pathbuf, &copy_options).unwrap();
+    dir::copy(path_from_cwd(&RESOURCES_DIR), dest_pathbuf, &copy_options).unwrap();
 }
 
 fn copy_dll(dest_dir: &PathParts) {
-    let src = ["target", "debug", "pathfinder_c_api_fun.dll"];
     let mut dest = Vec::from(dest_dir);
     dest.push("GfxPluginPathfinder.dll");
     let options = file::CopyOptions {
@@ -40,7 +41,9 @@ fn copy_dll(dest_dir: &PathParts) {
         skip_exist: false,
     };
 
-    file::copy(path_from_cwd(&src), path_from_cwd(&dest), &options).unwrap();
+    println!("{} -> {}", DLL_PATH.join("/"), dest.join("/"));
+    dir::create_all(path_from_cwd(dest_dir), false).unwrap();
+    file::copy(path_from_cwd(&DLL_PATH), path_from_cwd(&dest), &options).unwrap();
 }
 
 fn build() {
