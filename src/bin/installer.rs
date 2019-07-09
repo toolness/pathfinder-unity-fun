@@ -1,7 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
-use fs_extra::dir;
+use fs_extra::{dir, file};
 
 type PathParts = [&'static str];
 
@@ -30,6 +30,19 @@ fn copy_resources_dir(dest_dir: &PathParts) {
     dir::copy(path_from_cwd(&resources_dir), dest_pathbuf, &copy_options).unwrap();
 }
 
+fn copy_dll(dest_dir: &PathParts) {
+    let src = ["target", "debug", "pathfinder_c_api_fun.dll"];
+    let mut dest = Vec::from(dest_dir);
+    dest.push("GfxPluginPathfinder.dll");
+    let options = file::CopyOptions {
+        buffer_size: 64000,
+        overwrite: true,
+        skip_exist: false,
+    };
+
+    file::copy(path_from_cwd(&src), path_from_cwd(&dest), &options).unwrap();
+}
+
 fn build() {
     let mut child = Command::new("cargo")
         .arg("build")
@@ -45,7 +58,12 @@ fn build() {
 fn main() {
     println!("Building Pathfinder Unity plugin...");
     build();
-    println!("Copying resource directories...");
+
+    println!("Copying plugin to Unity projects...");
+    copy_dll(&["unity-project", "Assets"]);
+    copy_dll(&["dist", "unity-project_Data", "Plugins"]);
+
+    println!("Copying resource directory to Unity projects...");
     copy_resources_dir(&["unity-project", "Assets", "StreamingAssets", "pathfinder"]);
     copy_resources_dir(&["dist", "unity-project_Data", "StreamingAssets", "pathfinder"]);
 }
