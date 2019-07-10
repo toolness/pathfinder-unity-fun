@@ -5,8 +5,14 @@ use fs_extra::{dir, file};
 
 type PathParts = [&'static str];
 
+#[cfg(debug_assertions)]
+const TARGET_DIR: &'static str = "debug";
+
+#[cfg(not(debug_assertions))]
+const TARGET_DIR: &'static str = "release";
+
 const RESOURCES_DIR: [&'static str; 2] = ["pathfinder", "resources"];
-const DLL_PATH: [&'static str; 3] = ["target", "debug", "pathfinder_c_api_fun.dll"];
+const DLL_PATH: [&'static str; 3] = ["target", TARGET_DIR, "pathfinder_c_api_fun.dll"];
 
 fn path_from_cwd(parts: &PathParts) -> PathBuf {
     let mut pathbuf = env::current_dir().unwrap();
@@ -47,9 +53,15 @@ fn copy_dll(dest_dir: &PathParts) {
 }
 
 fn build() {
-    let mut child = Command::new("cargo")
-        .arg("build")
-        .arg("--lib")
+    let mut cmd = Command::new("cargo");
+
+    cmd.arg("build").arg("--lib");
+
+    if !cfg!(debug_assertions) {
+        cmd.arg("--release");
+    }
+
+    let mut child = cmd
         .spawn()
         .expect("failed to run cargo");
     let ecode = child.wait().expect("failed to wait on cargo");
@@ -59,7 +71,12 @@ fn build() {
 }
 
 fn main() {
-    println!("Building Pathfinder Unity plugin...");
+    if cfg!(debug_assertions) {
+        println!("Building Pathfinder Unity plugin for debugging...");
+    } else {
+        println!("Building Pathfinder Unity plugin with optimizations...");
+    }
+
     build();
 
     println!("Copying plugin to Unity projects...");
