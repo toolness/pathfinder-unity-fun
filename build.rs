@@ -85,7 +85,10 @@ fn build_pathfinder_csharp_code() {
             "PFRendererOptions",
             "PFScene*",
             "PFGL*",
-            "PFMetal*"
+            "PFMetal*",
+            "PFFilesystemResourceLoaderLocate",
+            "PFResourceLoaderDestroy",
+            "ResourceLoaderWrapper",
         ])
         .access("PFTextMetrics", CSAccess::Public)
         .generate();

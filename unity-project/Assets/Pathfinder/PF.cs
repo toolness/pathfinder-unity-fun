@@ -95,11 +95,81 @@ internal struct PFRectI {
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-internal struct PFBuildOptions {
-    internal UInt32 placeholder;
+internal struct PFMatrix2x2F {
+    internal float m00;
+    internal float m01;
+    internal float m10;
+    internal float m11;
 
-    internal PFBuildOptions(UInt32 placeholder) {
-        this.placeholder = placeholder;
+    internal PFMatrix2x2F(float m00, float m01, float m10, float m11) {
+        this.m00 = m00;
+        this.m01 = m01;
+        this.m10 = m10;
+        this.m11 = m11;
+    }
+}
+
+[Serializable]
+[StructLayout(LayoutKind.Sequential)]
+internal struct PFTransform2F {
+    internal PFMatrix2x2F matrix;
+    internal PFVector2F vector;
+
+    internal PFTransform2F(PFMatrix2x2F matrix, PFVector2F vector) {
+        this.matrix = matrix;
+        this.vector = vector;
+    }
+}
+
+[Serializable]
+[StructLayout(LayoutKind.Sequential)]
+internal struct PFTransform4F {
+    internal float m00;
+    internal float m01;
+    internal float m02;
+    internal float m03;
+    internal float m10;
+    internal float m11;
+    internal float m12;
+    internal float m13;
+    internal float m20;
+    internal float m21;
+    internal float m22;
+    internal float m23;
+    internal float m30;
+    internal float m31;
+    internal float m32;
+    internal float m33;
+
+    internal PFTransform4F(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13, float m20, float m21, float m22, float m23, float m30, float m31, float m32, float m33) {
+        this.m00 = m00;
+        this.m01 = m01;
+        this.m02 = m02;
+        this.m03 = m03;
+        this.m10 = m10;
+        this.m11 = m11;
+        this.m12 = m12;
+        this.m13 = m13;
+        this.m20 = m20;
+        this.m21 = m21;
+        this.m22 = m22;
+        this.m23 = m23;
+        this.m30 = m30;
+        this.m31 = m31;
+        this.m32 = m32;
+        this.m33 = m33;
+    }
+}
+
+[Serializable]
+[StructLayout(LayoutKind.Sequential)]
+internal struct PFPerspective {
+    internal PFTransform4F transform;
+    internal PFVector2I window_size;
+
+    internal PFPerspective(PFTransform4F transform, PFVector2I window_size) {
+        this.transform = transform;
+        this.window_size = window_size;
     }
 }
 
@@ -116,9 +186,19 @@ internal class PF {
 
     internal const byte PF_LINE_JOIN_ROUND = 2;
 
+    internal const byte PF_TEXT_ALIGN_LEFT = 0;
+
+    internal const byte PF_TEXT_ALIGN_CENTER = 1;
+
+    internal const byte PF_TEXT_ALIGN_RIGHT = 2;
+
     internal const byte PF_ARC_DIRECTION_CW = 0;
 
     internal const byte PF_ARC_DIRECTION_CCW = 1;
+
+    internal const byte PF_GL_VERSION_GL3 = 0;
+
+    internal const byte PF_GL_VERSION_GLES3 = 1;
 
     internal const byte PF_RENDERER_OPTIONS_FLAGS_HAS_BACKGROUND_COLOR = 1;
 
@@ -132,10 +212,10 @@ internal class PF {
     internal static extern IntPtr /* CanvasFontContext */ PFCanvasFontContextCreateWithSystemSource();
 
     [DllImport("GfxPluginPathfinder")]
-    internal static extern void PFCanvasFontContextDestroy(IntPtr /* CanvasFontContext */ font_context);
+    internal static extern IntPtr /* CanvasFontContext */ PFCanvasFontContextAddRef(IntPtr /* CanvasFontContext */ font_context);
 
     [DllImport("GfxPluginPathfinder")]
-    internal static extern IntPtr /* CanvasFontContext */ PFCanvasFontContextClone(IntPtr /* CanvasFontContext */ font_context);
+    internal static extern void PFCanvasFontContextRelease(IntPtr /* CanvasFontContext */ font_context);
 
     [DllImport("GfxPluginPathfinder")]
     internal static extern void PFCanvasFillRect(IntPtr /* CanvasRenderingContext2D */ canvas, ref PFRectF rect);
@@ -175,6 +255,9 @@ internal class PF {
 
     [DllImport("GfxPluginPathfinder")]
     internal static extern void PFCanvasSetFontSize(IntPtr /* CanvasRenderingContext2D */ canvas, float new_font_size);
+
+    [DllImport("GfxPluginPathfinder")]
+    internal static extern void PFCanvasSetTextAlign(IntPtr /* CanvasRenderingContext2D */ canvas, byte new_text_align);
 
     [DllImport("GfxPluginPathfinder")]
     internal static extern void PFCanvasSetFillStyle(IntPtr /* CanvasRenderingContext2D */ canvas, IntPtr /* FillStyle */ fill_style);
@@ -231,9 +314,27 @@ internal class PF {
     internal static extern void PFFillStyleDestroy(IntPtr /* FillStyle */ fill_style);
 
     [DllImport("GfxPluginPathfinder")]
-    internal static extern IntPtr /* Box */ PFFilesystemResourceLoaderLocate();
+    internal static extern IntPtr /* RenderTransform */ PFRenderTransformCreate2D(ref PFTransform2F transform);
 
     [DllImport("GfxPluginPathfinder")]
-    internal static extern void PFResourceLoaderDestroy(IntPtr /* Box */ loader);
+    internal static extern IntPtr /* RenderTransform */ PFRenderTransformCreatePerspective(ref PFPerspective perspective);
+
+    [DllImport("GfxPluginPathfinder")]
+    internal static extern void PFRenderTransformDestroy(IntPtr /* RenderTransform */ transform);
+
+    [DllImport("GfxPluginPathfinder")]
+    internal static extern IntPtr /* BuildOptions */ PFBuildOptionsCreate();
+
+    [DllImport("GfxPluginPathfinder")]
+    internal static extern void PFBuildOptionsDestroy(IntPtr /* BuildOptions */ options);
+
+    [DllImport("GfxPluginPathfinder")]
+    internal static extern void PFBuildOptionsSetTransform(IntPtr /* BuildOptions */ options, IntPtr /* RenderTransform */ transform);
+
+    [DllImport("GfxPluginPathfinder")]
+    internal static extern void PFBuildOptionsSetDilation(IntPtr /* BuildOptions */ options, ref PFVector2F dilation);
+
+    [DllImport("GfxPluginPathfinder")]
+    internal static extern void PFBuildOptionsSetSubpixelAAEnabled(IntPtr /* BuildOptions */ options, bool subpixel_aa_enabled);
 
 }
