@@ -47,5 +47,5 @@ path = "pathfinder/gl"
 [dependencies.pathfinder_simd]
 path = "pathfinder/simd"
 
-[build-dependencies.csharpbindgen]
-path = "csharpbindgen"
+[build-dependencies]
+csharpbindgen = "0.1.0"
