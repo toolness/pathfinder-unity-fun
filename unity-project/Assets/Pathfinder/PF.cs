@@ -111,11 +111,11 @@ internal struct PFMatrix2x2F {
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-internal struct PFTransform2DF {
+internal struct PFTransform2F {
     internal PFMatrix2x2F matrix;
     internal PFVector2F vector;
 
-    internal PFTransform2DF(PFMatrix2x2F matrix, PFVector2F vector) {
+    internal PFTransform2F(PFMatrix2x2F matrix, PFVector2F vector) {
         this.matrix = matrix;
         this.vector = vector;
     }
@@ -123,7 +123,7 @@ internal struct PFTransform2DF {
 
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-internal struct PFTransform3DF {
+internal struct PFTransform4F {
     internal float m00;
     internal float m01;
     internal float m02;
@@ -141,7 +141,7 @@ internal struct PFTransform3DF {
     internal float m32;
     internal float m33;
 
-    internal PFTransform3DF(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13, float m20, float m21, float m22, float m23, float m30, float m31, float m32, float m33) {
+    internal PFTransform4F(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13, float m20, float m21, float m22, float m23, float m30, float m31, float m32, float m33) {
         this.m00 = m00;
         this.m01 = m01;
         this.m02 = m02;
@@ -164,10 +164,10 @@ internal struct PFTransform3DF {
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
 internal struct PFPerspective {
-    internal PFTransform3DF transform;
+    internal PFTransform4F transform;
     internal PFVector2I window_size;
 
-    internal PFPerspective(PFTransform3DF transform, PFVector2I window_size) {
+    internal PFPerspective(PFTransform4F transform, PFVector2I window_size) {
         this.transform = transform;
         this.window_size = window_size;
     }
@@ -314,7 +314,7 @@ internal class PF {
     internal static extern void PFFillStyleDestroy(IntPtr /* FillStyle */ fill_style);
 
     [DllImport("GfxPluginPathfinder")]
-    internal static extern IntPtr /* RenderTransform */ PFRenderTransformCreate2D(ref PFTransform2DF transform);
+    internal static extern IntPtr /* RenderTransform */ PFRenderTransformCreate2D(ref PFTransform2F transform);
 
     [DllImport("GfxPluginPathfinder")]
     internal static extern IntPtr /* RenderTransform */ PFRenderTransformCreatePerspective(ref PFPerspective perspective);
