@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use csharpbindgen::CSAccess;
 
 const PATHFINDER_UNITY_API_RS: [&'static str; 2] = ["src", "pathfinder_unity_api.rs"];
+const PATHFINDER_C_LIB: [&'static str; 4] = ["pathfinder", "c", "src", "lib.rs"];
 
 type PathParts = [&'static str];
 
@@ -50,7 +51,7 @@ fn write_if_changed(path_parts: &PathParts, content: &String) {
 }
 
 fn build_pathfinder_rust_code() {
-    let mut content = read_file(&["pathfinder", "c", "src", "lib.rs"])
+    let mut content = read_file(&PATHFINDER_C_LIB)
         // Unity uses the "stdcall" calling convention, so we'll substitute
         // the C API's default "C" calling convention for it.
         //
@@ -70,6 +71,7 @@ fn build_pathfinder_rust_code() {
         "// This file has been auto-generated, please do not edit it.\n\n"
     ) + &content;
 
+    println!("cargo:rerun-if-changed={}", path_from_cwd(&PATHFINDER_C_LIB).to_string_lossy());
     write_if_changed(&PATHFINDER_UNITY_API_RS, &content);
 }
 
