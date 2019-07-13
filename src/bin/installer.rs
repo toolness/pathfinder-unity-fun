@@ -1,6 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 use std::process::Command;
+use std::fs::remove_dir;
 use fs_extra::{dir, file};
 
 type PathParts = [&'static str];
@@ -31,10 +32,16 @@ fn copy_resources_dir(dest_dir: &PathParts) {
         depth: 0
     };
     let dest_pathbuf = path_from_cwd(dest_dir);
-    let erase = false;
+    let erase = true;
 
     println!("{} -> {}", RESOURCES_DIR.join("/"), dest_dir.join("/"));
     dir::create_all(dest_pathbuf.clone(), erase).unwrap();
+
+    // If the destination directory already exists when we call dir::copy(),
+    // the resources directory will be put inside it, rather than its contents
+    // being copied into it, so now we have to delete that directory we just made.
+    remove_dir(dest_pathbuf.clone()).unwrap();
+
     dir::copy(path_from_cwd(&RESOURCES_DIR), dest_pathbuf, &copy_options).unwrap();
 }
 
