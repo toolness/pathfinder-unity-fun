@@ -212,10 +212,10 @@ internal class PF {
     internal static extern IntPtr /* CanvasFontContext */ PFCanvasFontContextCreateWithSystemSource();
 
     [DllImport("GfxPluginPathfinder")]
-    internal static extern void PFCanvasFontContextDestroy(IntPtr /* CanvasFontContext */ font_context);
+    internal static extern IntPtr /* CanvasFontContext */ PFCanvasFontContextAddRef(IntPtr /* CanvasFontContext */ font_context);
 
     [DllImport("GfxPluginPathfinder")]
-    internal static extern IntPtr /* CanvasFontContext */ PFCanvasFontContextClone(IntPtr /* CanvasFontContext */ font_context);
+    internal static extern void PFCanvasFontContextRelease(IntPtr /* CanvasFontContext */ font_context);
 
     [DllImport("GfxPluginPathfinder")]
     internal static extern void PFCanvasFillRect(IntPtr /* CanvasRenderingContext2D */ canvas, ref PFRectF rect);

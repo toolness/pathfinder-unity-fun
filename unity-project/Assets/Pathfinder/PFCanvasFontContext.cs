@@ -7,13 +7,7 @@ public class PFCanvasFontContext {
         handle = PF.PFCanvasFontContextCreateWithSystemSource();
     }
 
-    internal IntPtr PrepareToConsume() {
-        var oldHandle = handle;
-        handle = PF.PFCanvasFontContextClone(handle);
-        return oldHandle;
-    }
-
     ~PFCanvasFontContext() {
-        PF.PFCanvasFontContextDestroy(handle);
+        PF.PFCanvasFontContextRelease(handle);
     }
 }

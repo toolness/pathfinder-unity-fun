@@ -14,7 +14,7 @@ public class PFCanvas {
 
     public PFCanvas(PFCanvasFontContext fontContext, Vector2 size) {
         var pfSize = PFUnityConv.PFVector2F(size);
-        handle = PF.PFCanvasCreate(fontContext.PrepareToConsume(), ref pfSize);
+        handle = PF.PFCanvasCreate(fontContext.handle, ref pfSize);
     }
 
     private void EnsureHandleIsValid() {
