@@ -105,7 +105,7 @@
       <SubSystem>Windows</SubSystem>
     </Link>
     <CustomBuildStep>
-      <Command>cd $(ProjectDir)..\..\.. &amp;&amp; build_plugin.bat</Command>
+      <Command>cd $(ProjectDir)..\..\.. &amp;&amp; cargo run</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Building Unity Rust plugin</Message>
