@@ -23,6 +23,9 @@ winapi = { version = "0.3", features = ["wingdi", "libloaderapi"] }
 # because it won't see the GL functions we've loaded in our version.
 gl = "0.6"
 
+# This is only needed by our installer script.
+fs_extra = "1.1"
+
 [dependencies.pathfinder_geometry]
 path = "pathfinder/geometry"
 

@@ -16,10 +16,18 @@ The project currently only works on Windows, and it only supports
 Unity projects that use the OpenGL backend. It has been tested
 with Unity 2019.1.
 
+First, initialize the repository's git submodules:
+
 ```
 git submodule init
 git submodule update
-build_plugin
+```
+
+Then build the plugin and install it into the sample Unity
+project:
+
+```
+cargo run
 ```
 
 You will need to open the Unity project in the `unity-project` folder;
@@ -36,7 +44,7 @@ do the following:
    and attach a debugger to it.
 3. Make sure you are targeting `x64` in Visual Studio and press <kbd>F5</kbd>.
 
-Note that pressing <kbd>F5</kbd> automatically re-runs `build_plugin`, so you
+Note that pressing <kbd>F5</kbd> automatically re-runs `cargo run`, so you
 don't need to worry about re-running it manually.
 
 Logging produced by the plugin will be available in `dist/pathfinder-plugin.log`.
