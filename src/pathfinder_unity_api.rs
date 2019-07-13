@@ -15,12 +15,14 @@
 use font_kit::handle::Handle;
 
 use gl;
-use pathfinder_canvas::{CanvasFontContext, CanvasRenderingContext2D, FillStyle, LineJoin};
-use pathfinder_canvas::{Path2D, TextMetrics};
+use pathfinder_canvas::{CanvasFontContext, CanvasRenderingContext2D, FillStyle, LineJoin, Path2D};
+use pathfinder_canvas::{TextAlign, TextMetrics};
 use pathfinder_content::color::{ColorF, ColorU};
 use pathfinder_content::outline::ArcDirection;
 use pathfinder_content::stroke::LineCap;
 use pathfinder_geometry::rect::{RectF, RectI};
+use pathfinder_geometry::transform2d::{Matrix2x2F, Transform2DF};
+use pathfinder_geometry::transform3d::{Perspective, Transform3DF};
 use pathfinder_geometry::vector::{Vector2F, Vector2I};
 use pathfinder_gl::{GLDevice, GLVersion};
 use pathfinder_gpu::resources::{FilesystemResourceLoader, ResourceLoader};
@@ -28,7 +30,7 @@ use pathfinder_renderer::concurrent::rayon::RayonExecutor;
 use pathfinder_renderer::concurrent::scene_proxy::SceneProxy;
 use pathfinder_renderer::gpu::options::{DestFramebuffer, RendererOptions};
 use pathfinder_renderer::gpu::renderer::Renderer;
-use pathfinder_renderer::options::BuildOptions;
+use pathfinder_renderer::options::{BuildOptions, RenderTransform};
 use pathfinder_renderer::scene::Scene;
 use pathfinder_simd::default::F32x4;
 use std::ffi::CString;
@@ -45,18 +47,27 @@ use pathfinder_metal::MetalDevice;
 
 // `canvas`
 
-pub const PF_LINE_CAP_BUTT:   u8 = 0;
-pub const PF_LINE_CAP_SQUARE: u8 = 1;
-pub const PF_LINE_CAP_ROUND:  u8 = 2;
+pub const PF_LINE_CAP_BUTT:     u8 = 0;
+pub const PF_LINE_CAP_SQUARE:   u8 = 1;
+pub const PF_LINE_CAP_ROUND:    u8 = 2;
 
-pub const PF_LINE_JOIN_MITER: u8 = 0;
-pub const PF_LINE_JOIN_BEVEL: u8 = 1;
-pub const PF_LINE_JOIN_ROUND: u8 = 2;
+pub const PF_LINE_JOIN_MITER:   u8 = 0;
+pub const PF_LINE_JOIN_BEVEL:   u8 = 1;
+pub const PF_LINE_JOIN_ROUND:   u8 = 2;
+
+pub const PF_TEXT_ALIGN_LEFT:   u8 = 0;
+pub const PF_TEXT_ALIGN_CENTER: u8 = 1;
+pub const PF_TEXT_ALIGN_RIGHT:  u8 = 2;
 
 // `content`
 
 pub const PF_ARC_DIRECTION_CW:  u8 = 0;
 pub const PF_ARC_DIRECTION_CCW: u8 = 1;
+
+// `gl`
+
+pub const PF_GL_VERSION_GL3:    u8 = 0;
+pub const PF_GL_VERSION_GLES3:  u8 = 1;
 
 // `renderer`
 
@@ -75,6 +86,7 @@ pub type PFFillStyleRef = *mut FillStyle;
 pub type PFLineCap = u8;
 pub type PFLineJoin = u8;
 pub type PFArcDirection = u8;
+pub type PFTextAlign = u8;
 #[repr(C)]
 pub struct PFTextMetrics {
     pub width: f32,
@@ -117,10 +129,35 @@ pub struct PFRectI {
     pub origin: PFVector2I,
     pub lower_right: PFVector2I,
 }
+/// Row-major order.
+#[repr(C)]
+pub struct PFMatrix2x2F {
+    pub m00: f32, pub m01: f32,
+    pub m10: f32, pub m11: f32,
+}
+/// Row-major order.
+#[repr(C)]
+pub struct PFTransform2DF {
+    pub matrix: PFMatrix2x2F,
+    pub vector: PFVector2F,
+}
+/// Row-major order.
+#[repr(C)]
+pub struct PFTransform3DF {
+    pub m00: f32, pub m01: f32, pub m02: f32, pub m03: f32,
+    pub m10: f32, pub m11: f32, pub m12: f32, pub m13: f32,
+    pub m20: f32, pub m21: f32, pub m22: f32, pub m23: f32,
+    pub m30: f32, pub m31: f32, pub m32: f32, pub m33: f32,
+}
+#[repr(C)]
+pub struct PFPerspective {
+    pub transform: PFTransform3DF,
+    pub window_size: PFVector2I,
+}
 
 // `gl`
 pub type PFGLDeviceRef = *mut GLDevice;
-pub type PFGLVersion = GLVersion;
+pub type PFGLVersion = u8;
 pub type PFGLFunctionLoader = extern "stdcall" fn(name: *const c_char, userdata: *mut c_void)
                                             -> *const c_void;
 // `gpu`
@@ -132,7 +169,8 @@ pub type PFMetalDestFramebufferRef = *mut DestFramebuffer<MetalDevice>;
 pub type PFMetalRendererRef = *mut Renderer<MetalDevice>;
 // FIXME(pcwalton): Double-boxing is unfortunate. Remove this when `std::raw::TraitObject` is
 // stable?
-pub type PFResourceLoaderRef = *mut Box<dyn ResourceLoader>;
+pub type PFResourceLoaderRef = *mut ResourceLoaderWrapper;
+pub struct ResourceLoaderWrapper(Box<dyn ResourceLoader>);
 
 // `metal`
 #[cfg(all(target_os = "macos", not(feature = "pf-gl")))]
@@ -147,11 +185,8 @@ pub struct PFRendererOptions {
     pub flags: PFRendererOptionsFlags,
 }
 pub type PFRendererOptionsFlags = u8;
-// TODO(pcwalton)
-#[repr(C)]
-pub struct PFBuildOptions {
-    pub placeholder: u32,
-}
+pub type PFBuildOptionsRef = *mut BuildOptions;
+pub type PFRenderTransformRef = *mut RenderTransform;
 
 // `canvas`
 
@@ -293,6 +328,15 @@ pub unsafe extern "stdcall" fn PFCanvasSetFontSize(canvas: PFCanvasRef, new_font
 }
 
 #[no_mangle]
+pub unsafe extern "stdcall" fn PFCanvasSetTextAlign(canvas: PFCanvasRef, new_text_align: PFTextAlign) {
+    (*canvas).set_text_align(match new_text_align {
+        PF_TEXT_ALIGN_CENTER => TextAlign::Center,
+        PF_TEXT_ALIGN_RIGHT  => TextAlign::Right,
+        _                    => TextAlign::Left,
+    });
+}
+
+#[no_mangle]
 pub unsafe extern "stdcall" fn PFCanvasSetFillStyle(canvas: PFCanvasRef, fill_style: PFFillStyleRef) {
     (*canvas).set_fill_style(*fill_style)
 }
@@ -409,7 +453,7 @@ pub unsafe extern "stdcall" fn PFFillStyleDestroy(fill_style: PFFillStyleRef) {
 #[no_mangle]
 pub unsafe extern "stdcall" fn PFFilesystemResourceLoaderLocate() -> PFResourceLoaderRef {
     let loader = Box::new(FilesystemResourceLoader::locate());
-    Box::into_raw(Box::new(loader as Box<dyn ResourceLoader>))
+    Box::into_raw(Box::new(ResourceLoaderWrapper(loader as Box<dyn ResourceLoader>)))
 }
 
 #[no_mangle]
@@ -423,6 +467,7 @@ pub unsafe extern "stdcall" fn PFGLLoadWith(loader: PFGLFunctionLoader, userdata
 #[no_mangle]
 pub unsafe extern "stdcall" fn PFGLDeviceCreate(version: PFGLVersion, default_framebuffer: u32)
                                           -> PFGLDeviceRef {
+    let version = match version { PF_GL_VERSION_GLES3 => GLVersion::GLES3, _ => GLVersion::GL3 };
     Box::into_raw(Box::new(GLDevice::new(version, default_framebuffer)))
 }
 
@@ -457,7 +502,7 @@ pub unsafe extern "stdcall" fn PFGLRendererCreate(device: PFGLDeviceRef,
                                             options: *const PFRendererOptions)
                                             -> PFGLRendererRef {
     Box::into_raw(Box::new(Renderer::new(*Box::from_raw(device),
-                                         &**resources,
+                                         &*((*resources).0),
                                          *Box::from_raw(dest_framebuffer),
                                          (*options).to_rust())))
 }
@@ -495,7 +540,7 @@ pub unsafe extern "stdcall" fn PFMetalRendererCreate(device: PFMetalDeviceRef,
                                                options: *const PFRendererOptions)
                                                -> PFMetalRendererRef {
     Box::into_raw(Box::new(Renderer::new(*Box::from_raw(device),
-                                         &**resources,
+                                         &*((*resources).0),
                                          *Box::from_raw(dest_framebuffer),
                                          (*options).to_rust())))
 }
@@ -512,19 +557,21 @@ pub unsafe extern "stdcall" fn PFMetalRendererGetDevice(renderer: PFMetalRendere
     &mut (*renderer).device
 }
 
+// Consumes `build_options`.
 #[no_mangle]
 pub unsafe extern "stdcall" fn PFSceneProxyBuildAndRenderGL(scene_proxy: PFSceneProxyRef,
                                                       renderer: PFGLRendererRef,
-                                                      build_options: *const PFBuildOptions) {
-    (*scene_proxy).build_and_render(&mut *renderer, (*build_options).to_rust())
+                                                      build_options: PFBuildOptionsRef) {
+    (*scene_proxy).build_and_render(&mut *renderer, *Box::from_raw(build_options))
 }
 
+// Consumes `build_options`.
 #[cfg(all(target_os = "macos", not(feature = "pf-gl")))]
 #[no_mangle]
 pub unsafe extern "stdcall" fn PFSceneProxyBuildAndRenderMetal(scene_proxy: PFSceneProxyRef,
                                                          renderer: PFMetalRendererRef,
-                                                         build_options: *const PFBuildOptions) {
-    (*scene_proxy).build_and_render(&mut *renderer, (*build_options).to_rust())
+                                                         build_options: PFBuildOptionsRef) {
+    (*scene_proxy).build_and_render(&mut *renderer, *Box::from_raw(build_options))
 }
 
 // `metal`
@@ -542,7 +589,59 @@ pub unsafe extern "stdcall" fn PFMetalDeviceDestroy(device: PFMetalDeviceRef) {
     drop(Box::from_raw(device))
 }
 
+#[cfg(all(target_os = "macos", not(feature = "pf-gl")))]
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFMetalDevicePresentDrawable(device: PFMetalDeviceRef) {
+    (*device).present_drawable()
+}
+
 // `renderer`
+
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFRenderTransformCreate2D(transform: *const PFTransform2DF)
+                                                   -> PFRenderTransformRef {
+    Box::into_raw(Box::new(RenderTransform::Transform2D((*transform).to_rust())))
+}
+
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFRenderTransformCreatePerspective(perspective: *const PFPerspective)
+                                                            -> PFRenderTransformRef {
+    Box::into_raw(Box::new(RenderTransform::Perspective((*perspective).to_rust())))
+}
+
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFRenderTransformDestroy(transform: PFRenderTransformRef) {
+    drop(Box::from_raw(transform))
+}
+
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFBuildOptionsCreate() -> PFBuildOptionsRef {
+    Box::into_raw(Box::new(BuildOptions::default()))
+}
+
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFBuildOptionsDestroy(options: PFBuildOptionsRef) {
+    drop(Box::from_raw(options))
+}
+
+/// Consumes the transform.
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFBuildOptionsSetTransform(options: PFBuildOptionsRef,
+                                                    transform: PFRenderTransformRef) {
+    (*options).transform = *Box::from_raw(transform)
+}
+
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFBuildOptionsSetDilation(options: PFBuildOptionsRef,
+                                                   dilation: *const PFVector2F) {
+    (*options).dilation = (*dilation).to_rust()
+}
+
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFBuildOptionsSetSubpixelAAEnabled(options: PFBuildOptionsRef,
+                                                            subpixel_aa_enabled: bool) {
+    (*options).subpixel_aa_enabled = subpixel_aa_enabled
+}
 
 #[no_mangle]
 pub unsafe extern "stdcall" fn PFSceneDestroy(scene: PFSceneRef) {
@@ -625,6 +724,40 @@ impl PFVector2I {
     }
 }
 
+impl PFMatrix2x2F {
+    #[inline]
+    pub fn to_rust(&self) -> Matrix2x2F {
+        Matrix2x2F::row_major(self.m00, self.m01, self.m10, self.m11)
+    }
+}
+
+impl PFTransform2DF {
+    #[inline]
+    pub fn to_rust(&self) -> Transform2DF {
+        Transform2DF { matrix: self.matrix.to_rust(), vector: self.vector.to_rust() }
+    }
+}
+
+impl PFTransform3DF {
+    #[inline]
+    pub fn to_rust(&self) -> Transform3DF {
+        Transform3DF::row_major(self.m00, self.m01, self.m02, self.m03,
+                                self.m10, self.m11, self.m12, self.m13,
+                                self.m20, self.m21, self.m22, self.m23,
+                                self.m30, self.m31, self.m32, self.m33)
+    }
+}
+
+impl PFPerspective {
+    #[inline]
+    pub fn to_rust(&self) -> Perspective {
+        Perspective {
+            transform: self.transform.to_rust(),
+            window_size: self.window_size.to_rust(),
+        }
+    }
+}
+
 // Helpers for `renderer`
 
 impl PFRendererOptions {
@@ -637,11 +770,5 @@ impl PFRendererOptions {
                 None
             },
         }
-    }
-}
-
-impl PFBuildOptions {
-    pub fn to_rust(&self) -> BuildOptions {
-        BuildOptions::default()
     }
 }
