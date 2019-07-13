@@ -42,10 +42,17 @@ do the following:
 2. Open the Visual Studio solution in `dist/VSDebugHarness`. This solution
    doesn't have any code, it's just set up to launch the Unity project
    and attach a debugger to it.
-3. Make sure you are targeting `x64` in Visual Studio and press <kbd>F5</kbd>.
+3. Make sure you are targeting the `Debug` configuration for the
+   `x64` platform in Visual Studio and press <kbd>F5</kbd>.
 
 Note that pressing <kbd>F5</kbd> automatically re-runs `cargo run`, so you
 don't need to worry about re-running it manually.
+
+Alternatively, you can also have the debugger launch the Unity Editor
+with the sample Unity project. To do this, target the `DebugUnityEditor`
+configuration, visit the "Debugging" section of the properties page of the project
+and set the "Command" to the path of your Unity Editor executable. Then press
+<kbd>F5</kbd>.
 
 Logging produced by the plugin will be available in `dist/pathfinder-plugin.log`.
 
