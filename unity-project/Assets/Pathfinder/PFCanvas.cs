@@ -73,6 +73,34 @@ public class PFCanvas {
         PF.PFCanvasSetFontSize(handle, size);
     }
 
+    public void Save() {
+        EnsureHandleIsValid();
+        PF.PFCanvasSave(handle);
+    }
+
+    public void Restore() {
+        EnsureHandleIsValid();
+        PF.PFCanvasRestore(handle);
+    }
+
+    public void SetCurrentTransform(Matrix4x4 matrix) {
+        EnsureHandleIsValid();
+        var pfMatrix = new PFMatrix2x2F(
+            matrix.m00,
+            matrix.m01,
+            matrix.m10,
+            matrix.m11
+        );
+        var pfVector = new PFVector2F(matrix.m03, matrix.m13);
+        var pfTransform = new PFTransform2F(pfMatrix, pfVector);
+        PF.PFCanvasSetCurrentTransform(handle, ref pfTransform);
+    }
+
+    public void ResetTransform() {
+        EnsureHandleIsValid();
+        PF.PFCanvasResetTransform(handle);
+    }
+
     public void FillRect(Rect rect) {
         EnsureHandleIsValid();
         var pfRect = PFUnityConv.PFRectF(rect);

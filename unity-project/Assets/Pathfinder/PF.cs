@@ -248,6 +248,18 @@ internal class PF {
     internal static extern void PFCanvasSetLineDash(IntPtr /* CanvasRenderingContext2D */ canvas, IntPtr /* float */ new_line_dashes, UIntPtr new_line_dash_count);
 
     [DllImport("GfxPluginPathfinder")]
+    internal static extern void PFCanvasSetCurrentTransform(IntPtr /* CanvasRenderingContext2D */ canvas, ref PFTransform2F transform);
+
+    [DllImport("GfxPluginPathfinder")]
+    internal static extern void PFCanvasResetTransform(IntPtr /* CanvasRenderingContext2D */ canvas);
+
+    [DllImport("GfxPluginPathfinder")]
+    internal static extern void PFCanvasSave(IntPtr /* CanvasRenderingContext2D */ canvas);
+
+    [DllImport("GfxPluginPathfinder")]
+    internal static extern void PFCanvasRestore(IntPtr /* CanvasRenderingContext2D */ canvas);
+
+    [DllImport("GfxPluginPathfinder")]
     internal static extern void PFCanvasSetLineDashOffset(IntPtr /* CanvasRenderingContext2D */ canvas, float new_offset);
 
     [DllImport("GfxPluginPathfinder")]

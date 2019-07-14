@@ -313,6 +313,26 @@ pub unsafe extern "stdcall" fn PFCanvasSetLineDash(canvas: PFCanvasRef,
 }
 
 #[no_mangle]
+pub unsafe extern "stdcall" fn PFCanvasSetCurrentTransform(canvas: PFCanvasRef, transform: *const PFTransform2F) {
+    (*canvas).set_current_transform(&(*transform).to_rust());
+}
+
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFCanvasResetTransform(canvas: PFCanvasRef) {
+    (*canvas).reset_transform();
+}
+
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFCanvasSave(canvas: PFCanvasRef) {
+    (*canvas).save();
+}
+
+#[no_mangle]
+pub unsafe extern "stdcall" fn PFCanvasRestore(canvas: PFCanvasRef) {
+    (*canvas).restore();
+}
+
+#[no_mangle]
 pub unsafe extern "stdcall" fn PFCanvasSetLineDashOffset(canvas: PFCanvasRef, new_offset: f32) {
     (*canvas).set_line_dash_offset(new_offset)
 }
